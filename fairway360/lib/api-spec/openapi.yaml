@@ -1,0 +1,1328 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Fairway360 multi-tenant SaaS API. All data is scoped to the authenticated user's club; club_id is always derived from the session, never from the request.
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+  - name: auth
+  - name: public
+  - name: members
+  - name: fnb
+  - name: employees
+  - name: supervisor
+  - name: agent
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+
+  # ---- Auth -----------------------------------------------------------------
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in with email + password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthUser" }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out (clears the session)
+      responses:
+        "204": { description: Logged out }
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthUser" }
+        "401": { $ref: "#/components/responses/Error" }
+
+  # ---- Public ---------------------------------------------------------------
+  /leads/demo-request:
+    post:
+      operationId: createDemoRequest
+      tags: [public]
+      summary: Submit a demo / sales request from the marketing site
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DemoRequest" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+
+  # ---- Members portal -------------------------------------------------------
+  /me/dashboard:
+    get:
+      operationId: getMemberDashboard
+      tags: [members]
+      responses:
+        "200":
+          description: Member dashboard bundle
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MemberDashboard" }
+        "401": { $ref: "#/components/responses/Error" }
+  /me/account:
+    get:
+      operationId: getMemberAccount
+      tags: [members]
+      responses:
+        "200":
+          description: Member account
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MemberAccount" }
+  /me/payments:
+    get:
+      operationId: getMemberPayments
+      tags: [members]
+      responses:
+        "200":
+          description: Payment history
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Payment" }
+  /payments/checkout:
+    post:
+      operationId: createCheckout
+      tags: [members]
+      responses:
+        "200":
+          description: Stripe Checkout session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckoutSession" }
+        "400": { $ref: "#/components/responses/Error" }
+  /menu:
+    get:
+      operationId: getMenu
+      tags: [members]
+      responses:
+        "200":
+          description: F&B menu
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MenuItem" }
+  /events:
+    get:
+      operationId: listEvents
+      tags: [members]
+      responses:
+        "200":
+          description: Club events
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ClubEvent" }
+    post:
+      operationId: createEvent
+      tags: [supervisor]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/EventInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClubEvent" }
+  /events/{id}/rsvp:
+    post:
+      operationId: rsvpEvent
+      tags: [members]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RsvpInput" }
+      responses:
+        "200":
+          description: RSVP recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+  /tee-times:
+    get:
+      operationId: listTeeTimes
+      tags: [members]
+      parameters:
+        - name: open
+          in: query
+          required: false
+          schema: { type: boolean }
+          description: When true, return only open (bookable) slots
+      responses:
+        "200":
+          description: Tee times
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TeeTime" }
+    post:
+      operationId: bookTeeTime
+      tags: [members]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeeTimeInput" }
+      responses:
+        "201":
+          description: Booked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TeeTime" }
+  /me/tee-times:
+    get:
+      operationId: getMyTeeTimes
+      tags: [members]
+      responses:
+        "200":
+          description: My tee times
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TeeTime" }
+  /tee-times/{id}:
+    delete:
+      operationId: cancelTeeTime
+      tags: [members]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "204": { description: Cancelled }
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [fnb]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/OrderStatus" }
+      responses:
+        "200":
+          description: Orders (F&B service board)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Order" }
+    post:
+      operationId: createOrder
+      tags: [members]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderInput" }
+      responses:
+        "201":
+          description: Order placed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+  /me/orders:
+    get:
+      operationId: getMyOrders
+      tags: [members]
+      responses:
+        "200":
+          description: My orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Order" }
+  /orders/{id}/status:
+    patch:
+      operationId: advanceOrderStatus
+      tags: [fnb]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderStatusInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Order" }
+
+  # ---- Employees portal -----------------------------------------------------
+  /me/messages:
+    get:
+      operationId: getMyMessages
+      tags: [employees]
+      responses:
+        "200":
+          description: My staff messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/StaffMessageItem" }
+  /me/messages/{id}/read:
+    patch:
+      operationId: markMessageRead
+      tags: [employees]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+  /me/presence:
+    patch:
+      operationId: updatePresence
+      tags: [employees]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PresenceInput" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+  /me/handoff:
+    get:
+      operationId: getMyHandoff
+      tags: [employees]
+      responses:
+        "200":
+          description: Summary of AI agent coverage while staff were away
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Handoff" }
+  /me/shifts:
+    get:
+      operationId: getMyShifts
+      tags: [employees]
+      responses:
+        "200":
+          description: My shifts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Shift" }
+  /shifts/{id}/clock-in:
+    post:
+      operationId: clockIn
+      tags: [employees]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Clocked in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Shift" }
+  /shifts/{id}/clock-out:
+    post:
+      operationId: clockOut
+      tags: [employees]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Clocked out
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Shift" }
+  /me/tasks:
+    get:
+      operationId: getMyTasks
+      tags: [employees]
+      responses:
+        "200":
+          description: Tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Task" }
+  /tasks:
+    get:
+      operationId: listTasks
+      tags: [supervisor]
+      responses:
+        "200":
+          description: All team tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Task" }
+    post:
+      operationId: createTask
+      tags: [supervisor]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TaskInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+  /tasks/{id}:
+    patch:
+      operationId: updateTask
+      tags: [employees]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TaskUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+  /me/time-off:
+    get:
+      operationId: getMyTimeOff
+      tags: [employees]
+      responses:
+        "200":
+          description: Time-off requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TimeOff" }
+  /time-off:
+    post:
+      operationId: requestTimeOff
+      tags: [employees]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TimeOffInput" }
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TimeOff" }
+  /time-off/{id}:
+    patch:
+      operationId: decideTimeOff
+      tags: [supervisor]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TimeOffDecision" }
+      responses:
+        "200":
+          description: Decided
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TimeOff" }
+  /team:
+    get:
+      operationId: getTeam
+      tags: [employees]
+      responses:
+        "200":
+          description: Team roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TeamMember" }
+
+  # ---- Supervisor portal ----------------------------------------------------
+  /overview:
+    get:
+      operationId: getOverview
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Supervisor overview metrics
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Overview" }
+  /course/rounds:
+    get:
+      operationId: getCourseRounds
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Live on-course rounds
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CourseRound" }
+  /requests:
+    get:
+      operationId: listRequests
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Open member requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MemberRequest" }
+  /requests/{id}/resolve:
+    patch:
+      operationId: resolveRequest
+      tags: [supervisor]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Resolved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+  /staff:
+    get:
+      operationId: listStaff
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Staff roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/TeamMember" }
+  /staff/{id}/message:
+    post:
+      operationId: messageStaff
+      tags: [supervisor]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffMessageBody" }
+      responses:
+        "200":
+          description: Message result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResult" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+  /leads:
+    get:
+      operationId: listLeads
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Sales leads
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Lead" }
+  /leads/{id}:
+    patch:
+      operationId: updateLead
+      tags: [supervisor]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LeadUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lead" }
+  /bookings:
+    get:
+      operationId: listBookings
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Tee sheet (all bookings today)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Booking" }
+  /bookings/{id}:
+    patch:
+      operationId: updateBooking
+      tags: [supervisor]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookingUpdate" }
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Booking" }
+        "404": { $ref: "#/components/responses/Error" }
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [members]
+      responses:
+        "200":
+          description: Announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Announcement" }
+    post:
+      operationId: createAnnouncement
+      tags: [supervisor]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AnnouncementInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Announcement" }
+
+  # ---- Department channels (chat) -------------------------------------------
+  /channels:
+    get:
+      operationId: listChannels
+      tags: [members]
+      responses:
+        "200":
+          description: Department channels visible to the user
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Channel" }
+  /channels/{id}/messages:
+    get:
+      operationId: getChannelMessages
+      tags: [members]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Channel message history
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ChatMessage" }
+    post:
+      operationId: sendChannelMessage
+      tags: [members]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChannelMessageInput" }
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatMessage" }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  # ---- Escalations ----------------------------------------------------------
+  /escalations:
+    get:
+      operationId: listEscalations
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Open escalations for the club
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Escalation" }
+  /escalations/{id}/resolve:
+    patch:
+      operationId: resolveEscalation
+      tags: [supervisor]
+      parameters: [{ $ref: "#/components/parameters/IdPath" }]
+      responses:
+        "200":
+          description: Resolved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  # ---- Supervisor delegation ------------------------------------------------
+  /agents/delegation:
+    get:
+      operationId: getDelegation
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Current delegation state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Delegation" }
+  /agents/delegate:
+    post:
+      operationId: startDelegation
+      tags: [supervisor]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DelegateInput" }
+      responses:
+        "200":
+          description: Delegation started
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Delegation" }
+  /agents/delegation/end:
+    post:
+      operationId: endDelegation
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Delegation ended
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+
+  # ---- Messaging analytics --------------------------------------------------
+  /analytics/messaging:
+    get:
+      operationId: getMessagingAnalytics
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Messaging & AI agent metrics (last 7 days)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessagingAnalytics" }
+
+  # ---- Agentic concierge ----------------------------------------------------
+  /agent/chat:
+    post:
+      operationId: agentChat
+      tags: [agent]
+      summary: Send a message to the AI concierge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AgentChatInput" }
+      responses:
+        "200":
+          description: Assistant reply
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AgentChatReply" }
+
+components:
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ProblemDetails" }
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status: { type: string }
+      required: [status]
+    Ok:
+      type: object
+      properties:
+        ok: { type: boolean }
+      required: [ok]
+    Channel:
+      type: object
+      properties:
+        id: { type: string }
+        key: { type: string }
+        name: { type: string }
+        description: { type: string }
+        emoji: { type: string }
+        color: { type: string }
+        department: { type: string }
+        visibleToMembers: { type: boolean }
+      required: [id, key, name]
+    ChatMessage:
+      type: object
+      properties:
+        id: { type: string }
+        channelId: { type: string }
+        senderUserId: { type: string }
+        senderName: { type: string }
+        senderRole: { type: string }
+        aiGenerated: { type: boolean }
+        content: { type: string }
+        time: { type: string }
+        createdAt: { type: string }
+      required: [id, channelId, senderName, content, createdAt]
+    ChannelMessageInput:
+      type: object
+      properties:
+        content: { type: string, minLength: 1 }
+      required: [content]
+    Escalation:
+      type: object
+      properties:
+        id: { type: string }
+        channelId: { type: string }
+        memberName: { type: string }
+        level: { type: number }
+        triggerType: { type: string }
+        contextSummary: { type: string }
+        agentLastMessage: { type: string }
+        status: { type: string }
+        time: { type: string }
+      required: [id, memberName, level, status]
+    PresenceInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [available, busy, away, offline, dnd]
+      required: [status]
+    Delegation:
+      type: object
+      properties:
+        active: { type: boolean }
+        autonomy: { type: string }
+        by: { type: string }
+        until: { type: string }
+        startedAt: { type: string }
+      required: [active]
+    DelegateInput:
+      type: object
+      properties:
+        autonomy:
+          type: string
+          enum: [low, medium, high, full]
+        durationMinutes: { type: number }
+      required: [autonomy, durationMinutes]
+    MessagingChannelStat:
+      type: object
+      properties:
+        name: { type: string }
+        messages: { type: number }
+      required: [name, messages]
+    MessagingAnalytics:
+      type: object
+      properties:
+        messages7d: { type: number }
+        aiReplies7d: { type: number }
+        aiSharePct: { type: number }
+        escalationsOpen: { type: number }
+        escalationsTotal: { type: number }
+        l1: { type: number }
+        l2: { type: number }
+        l3: { type: number }
+        channels:
+          type: array
+          items: { $ref: "#/components/schemas/MessagingChannelStat" }
+      required: [messages7d, aiReplies7d, aiSharePct, escalationsOpen, escalationsTotal, l1, l2, l3]
+    HandoffChannel:
+      type: object
+      properties:
+        name: { type: string }
+        emoji: { type: string }
+        replies: { type: number }
+        lastReply: { type: string }
+      required: [name, replies]
+    HandoffEscalation:
+      type: object
+      properties:
+        level: { type: number }
+        member: { type: string }
+        triggerType: { type: string }
+        status: { type: string }
+      required: [level, member, status]
+    Handoff:
+      type: object
+      properties:
+        since: { type: string }
+        totalAgentReplies: { type: number }
+        openEscalations: { type: number }
+        channels:
+          type: array
+          items: { $ref: "#/components/schemas/HandoffChannel" }
+        escalations:
+          type: array
+          items: { $ref: "#/components/schemas/HandoffEscalation" }
+      required: [since, totalAgentReplies, openEscalations]
+    ProblemDetails:
+      type: object
+      properties:
+        title: { type: string }
+        detail: { type: string }
+        status: { type: number }
+      required: [title]
+
+    Role:
+      type: string
+      enum: [supervisor, employee, member]
+
+    LoginRequest:
+      type: object
+      properties:
+        email: { type: string }
+        password: { type: string }
+      required: [email, password]
+    AuthUser:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        initials: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        clubName: { type: string }
+        clubSlug: { type: string }
+      required: [id, name, email, role, clubName]
+
+    DemoRequest:
+      type: object
+      properties:
+        name: { type: string }
+        clubName: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        businessType: { type: string }
+        problem: { type: string }
+        volume: { type: string }
+      required: [name, email]
+
+    Payment:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        date: { type: string }
+        amount: { type: number }
+      required: [id, label, date, amount]
+    CheckoutSession:
+      type: object
+      properties:
+        url: { type: string }
+      required: [url]
+    StaffMessageBody:
+      type: object
+      properties:
+        message: { type: string, minLength: 1 }
+      required: [message]
+    MessageResult:
+      type: object
+      properties:
+        sent: { type: boolean }
+      required: [sent]
+    StaffMessageItem:
+      type: object
+      properties:
+        id: { type: string }
+        from: { type: string }
+        body: { type: string }
+        read: { type: boolean }
+        time: { type: string }
+      required: [id, from, body, read, time]
+    MemberAccount:
+      type: object
+      properties:
+        name: { type: string }
+        memberSince: { type: string }
+        tier: { type: string }
+        number: { type: string }
+        balance: { type: number }
+        handicap: { type: number }
+        roundsThisYear: { type: number }
+      required: [name, tier, number, balance, roundsThisYear]
+    UpcomingItem:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        date: { type: string }
+        time: { type: string }
+      required: [id, label, date, time]
+    MemberDashboard:
+      type: object
+      properties:
+        account: { $ref: "#/components/schemas/MemberAccount" }
+        upcoming:
+          type: array
+          items: { $ref: "#/components/schemas/UpcomingItem" }
+        announcements:
+          type: array
+          items: { $ref: "#/components/schemas/Announcement" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/ClubEvent" }
+      required: [account, upcoming, announcements, events]
+
+    MenuCategory:
+      type: string
+      enum: [Drinks, Food, Snacks]
+    MenuItem:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        price: { type: number }
+        category: { $ref: "#/components/schemas/MenuCategory" }
+        image: { type: string }
+      required: [id, name, price, category, image]
+
+    ClubEvent:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        date: { type: string }
+        time: { type: string }
+        spots: { type: string }
+        tag: { type: string }
+      required: [id, title, date, time, spots, tag]
+    EventInput:
+      type: object
+      properties:
+        title: { type: string }
+        startsAt: { type: string }
+        tag: { type: string }
+        capacity: { type: number }
+      required: [title, startsAt, tag]
+    RsvpInput:
+      type: object
+      properties:
+        partySize: { type: number }
+      required: [partySize]
+
+    TeeTimeStatus:
+      type: string
+      enum: [pending, confirmed, checked_in, cancelled]
+    TeeTime:
+      type: object
+      properties:
+        id: { type: string }
+        member: { type: string }
+        time: { type: string }
+        date: { type: string }
+        players: { type: number }
+        holes: { type: number }
+        status: { type: string }
+      required: [id, time, players, holes, status]
+    TeeTimeInput:
+      type: object
+      properties:
+        startsAt: { type: string }
+        players: { type: number }
+        holes: { type: number }
+      required: [startsAt, players, holes]
+
+    OrderStatus:
+      type: string
+      enum: [New, Preparing, Ready, Delivered]
+    OrderLine:
+      type: object
+      properties:
+        itemId: { type: string }
+        name: { type: string }
+        price: { type: number }
+        qty: { type: number }
+      required: [itemId, name, price, qty]
+    Order:
+      type: object
+      properties:
+        id: { type: string }
+        groupId: { type: string }
+        member: { type: string }
+        hole: { type: number }
+        cartNumber: { type: string }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/OrderLine" }
+        note: { type: string }
+        status: { $ref: "#/components/schemas/OrderStatus" }
+        placedAt: { type: string }
+        total: { type: number }
+      required: [id, member, lines, note, status, placedAt, total]
+    OrderInputLine:
+      type: object
+      properties:
+        itemId: { type: string }
+        qty: { type: number }
+      required: [itemId, qty]
+    OrderInput:
+      type: object
+      properties:
+        groupId: { type: string, description: "Round id, set by staff placing an order on a group's behalf. Omitted for member self-orders." }
+        hole: { type: number }
+        note: { type: string }
+        lines:
+          type: array
+          items: { $ref: "#/components/schemas/OrderInputLine" }
+      required: [lines]
+    OrderStatusInput:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/OrderStatus" }
+      required: [status]
+
+    Shift:
+      type: object
+      properties:
+        id: { type: string }
+        day: { type: string }
+        date: { type: string }
+        time: { type: string }
+        role: { type: string }
+        status: { type: string }
+        clockedIn: { type: boolean }
+      required: [id, day, date, time, role, status]
+    Task:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        due: { type: string }
+        done: { type: boolean }
+        priority: { type: string }
+        assignee: { type: string }
+      required: [id, label, due, done]
+    TaskInput:
+      type: object
+      properties:
+        label: { type: string }
+        dueAt: { type: string }
+        priority: { type: string }
+        assignedTo: { type: string }
+      required: [label]
+    TaskUpdate:
+      type: object
+      properties:
+        done: { type: boolean }
+        label: { type: string }
+        priority: { type: string }
+    TimeOffStatus:
+      type: string
+      enum: [Pending, Approved, Denied]
+    TimeOff:
+      type: object
+      properties:
+        id: { type: string }
+        dates: { type: string }
+        reason: { type: string }
+        status: { $ref: "#/components/schemas/TimeOffStatus" }
+        submitted: { type: string }
+      required: [id, dates, status, submitted]
+    TimeOffInput:
+      type: object
+      properties:
+        startDate: { type: string }
+        endDate: { type: string }
+        reason: { type: string }
+      required: [startDate, endDate]
+    TimeOffDecision:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/TimeOffStatus" }
+      required: [status]
+
+    TeamMember:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        initials: { type: string }
+        role: { type: string }
+        status: { type: string }
+        shift: { type: string }
+        area: { type: string }
+        tasksOpen: { type: number }
+      required: [id, name, initials, role, status]
+
+    Overview:
+      type: object
+      properties:
+        membersOnCourse: { type: number }
+        openRequests: { type: number }
+        activeOrders: { type: number }
+        staffOnShift: { type: number }
+        newLeads: { type: number }
+        bookingsToday: { type: number }
+        revenueToday: { type: number }
+      required: [membersOnCourse, openRequests, activeOrders, staffOnShift, newLeads, bookingsToday]
+    CourseRound:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        initials: { type: string }
+        hole: { type: number }
+        cartNumber: { type: string }
+        status: { type: string }
+        pace: { type: string }
+        since: { type: string }
+        x: { type: number }
+        y: { type: number }
+      required: [id, name, initials, hole, status, pace, x, y]
+    RequestType:
+      type: string
+      enum: [Beverage, Food, Cart, Assistance]
+    MemberRequest:
+      type: object
+      properties:
+        id: { type: string }
+        member: { type: string }
+        hole: { type: number }
+        request: { type: string }
+        type: { $ref: "#/components/schemas/RequestType" }
+        priority: { type: string }
+      required: [id, member, request, type, priority]
+    LeadStatus:
+      type: string
+      enum: [New, Contacted, Tour Booked, Won, Lost]
+    Lead:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        contactName: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        source: { type: string }
+        interest: { type: string }
+        status: { $ref: "#/components/schemas/LeadStatus" }
+        businessType: { type: string }
+        problem: { type: string }
+        volume: { type: string }
+        time: { type: string }
+      required: [id, name, status]
+    LeadUpdate:
+      type: object
+      properties:
+        status: { $ref: "#/components/schemas/LeadStatus" }
+      required: [status]
+    Booking:
+      type: object
+      properties:
+        id: { type: string }
+        member: { type: string }
+        time: { type: string }
+        players: { type: number }
+        holes: { type: number }
+        status: { type: string }
+      required: [id, member, time, players, holes, status]
+    BookingUpdate:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [confirmed, checked_in, cancelled]
+      required: [status]
+    Announcement:
+      type: object
+      properties:
+        id: { type: string }
+        tag: { type: string }
+        title: { type: string }
+        date: { type: string }
+      required: [id, title]
+    AnnouncementInput:
+      type: object
+      properties:
+        tag: { type: string }
+        title: { type: string }
+        body: { type: string }
+        audience: { type: string }
+      required: [title]
+
+    AgentChatInput:
+      type: object
+      properties:
+        conversationId: { type: string }
+        message: { type: string }
+      required: [message]
+    AgentChatReply:
+      type: object
+      properties:
+        conversationId: { type: string }
+        reply: { type: string }
+      required: [conversationId, reply]

@@ -1,0 +1,127 @@
+uploads = []
+
+[[generated]]
+id = "MtJDR3QQffLLFJZw6fuZJ"
+uri = "file://attached_assets/generated_images/menu_d1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "vuE4GGkrg_NnJmUTG2O5f"
+uri = "file://attached_assets/generated_images/menu_d2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "uJFZwlOhlkiDiEHrDF_Qg"
+uri = "file://attached_assets/generated_images/menu_d3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "1mYNlQyIb-2disRx3c1Yz"
+uri = "file://attached_assets/generated_images/menu_d4.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "laXixvhjF1EtMgUVMwBKH"
+uri = "file://attached_assets/generated_images/menu_d5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "qLnXVde-UyqLIxDjqaLB8"
+uri = "file://attached_assets/generated_images/menu_d6.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "HV5VtoJv53gux0S-cL2mV"
+uri = "file://attached_assets/generated_images/menu_d7.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "1HjKeuC66yZuUokuQCFFR"
+uri = "file://attached_assets/generated_images/menu_d8.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "eznprPnyFv9jQity8Q5Rh"
+uri = "file://attached_assets/generated_images/menu_f1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "MKB8CUpbEbqQDOoLUj7w8"
+uri = "file://attached_assets/generated_images/menu_f2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "l3AFJ_Er_9_R0rxnx1H6I"
+uri = "file://attached_assets/generated_images/menu_f3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Zjo3VhTLrUShVG1VAsPuk"
+uri = "file://attached_assets/generated_images/menu_f4.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "O_UX3HyOKzHmrPvYO13ti"
+uri = "file://attached_assets/generated_images/menu_f5.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "VmnjB-dYVIeA7_VNHKZ1T"
+uri = "file://attached_assets/generated_images/menu_f6.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "YlDOPHidEbluM9uFOxYSn"
+uri = "file://attached_assets/generated_images/menu_s1.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "L1rvmZvqgzuZfSRdZZ7lh"
+uri = "file://attached_assets/generated_images/menu_s2.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "SFuxeXSCUfHmP8OIqhJMA"
+uri = "file://attached_assets/generated_images/menu_s3.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "uKJthikaY08ZWI5hMuDcp"
+uri = "file://attached_assets/generated_images/menu_s4.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "Dy_YvJgaNmHZPW4fvan2J"
+uri = "file://attached_assets/generated_images/portal_clubhouse_hero.png"
+type = "image"
+title = "clubhouse hero"
+
+[[generated]]
+id = "SrdilWbt2g-Rc7hl-bD2u"
+uri = "file://attached_assets/generated_images/portal_course_green.png"
+type = "image"
+title = "course green"
+
+[[outputs]]
+id = "2cte8Ms_v24prUQ9b28PH"
+uri = "file://FAIRWAY360_MASTER_DUMP.md"
+type = "text"
+title = "Fairway360 — Master Build Dump"

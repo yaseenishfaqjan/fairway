@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fairway
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-fairway_dev_password}
+      POSTGRES_DB: fairway360
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U fairway -d fairway360']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgres://fairway:${DB_PASSWORD:-fairway_dev_password}@postgres:5432/fairway360
+      JWT_SECRET: ${JWT_SECRET:-change_this_to_a_64_char_random_string_aaaaaaaaaaaaaaaaaaaaaaaa}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_this_to_a_different_64_char_string_bbbbbbbbbbbbbbbb}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:8080}
+      SEED_DATABASE: ${SEED_DATABASE:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      - server
+    restart: unless-stopped
+
+volumes:
+  pgdata:

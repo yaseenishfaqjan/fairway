@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Authenticated app areas — no SEO value, keep out of the index.
+Disallow: /portal
+Disallow: /api
+
+Sitemap: https://fairway360.com/sitemap.xml

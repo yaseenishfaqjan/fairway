@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fairway-web",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": [
+        "exec",
+        "fairway-dev",
+        "bash",
+        "-lc",
+        "cd /workspace/artifacts/fairway360 && PORT=5173 BASE_PATH=/ NODE_ENV=development node /workspace/node_modules/vite/bin/vite.js --host 0.0.0.0 --port 5173"
+      ],
+      "port": 5173
+    }
+  ]
+}

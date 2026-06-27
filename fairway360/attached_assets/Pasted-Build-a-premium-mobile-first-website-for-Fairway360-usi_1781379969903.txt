@@ -1,0 +1,145 @@
+Build a premium mobile-first website for “Fairway360” using the attached image as the main visual direction, color palette, and layout inspiration.
+
+Brand:
+Fairway360
+Tagline: AI Club Operation System
+Theme: luxury golf club + enterprise AI software
+Colors: dark forest green, deep emerald, cream/white, metallic gold
+Style: premium, cinematic, clean, Apple-level SaaS, golf-country-club luxury
+
+Website goal:
+Create a landing page that makes Fairway360 look like the AI operating system for golf courses and country clubs.
+
+Use the six visual panels from the uploaded infographic throughout the website as feature sections:
+1. New Lead Captured
+2. AI Voice Agent
+3. Executive Dashboard
+4. Tee Time Confirmed
+5. CRM / Prospects Dashboard
+6. AI Concierge
+
+Page structure:
+
+1. Header
+- Logo area: Fairway360 with small golf flag shield icon
+- Navigation: Platform, Features, Dashboard, Demo
+- Button: Book a Demo
+- Mobile hamburger menu
+
+2. Hero Section
+Headline:
+Fairway360: The AI Operating System for Golf Courses & Country Clubs
+
+Subheadline:
+Capture every lead, answer every call, automate every follow-up, and keep your club operating at full capacity 24/7.
+
+Buttons:
+Book a Demo
+See Platform
+
+Hero visual:
+Use the uploaded infographic as the main hero image or recreate its style with a large central Fairway360 ecosystem graphic.
+
+3. “One Platform. Every Operation.” Section
+Create a central circular Fairway360 platform diagram with glowing gold lines connected to:
+- Voice AI
+- Membership Sales
+- Tee Times
+- Events
+- CRM
+- Marketing
+- Member Support
+- Dining Reservations
+- Pro Shop
+- Analytics
+- Reviews
+- Text Automation
+
+4. Six Image Feature Grid
+Use six premium cards, each with one of the visual concepts from the infographic:
+
+Card 1:
+Title: Never Miss Another Lead
+Text: Fairway360 captures new membership inquiries, qualifies prospects, and routes every lead into your club pipeline.
+
+Card 2:
+Title: 24/7 AI Voice Agent
+Text: AI agents answer calls, respond to questions, book appointments, and keep your club available after hours.
+
+Card 3:
+Title: Executive Dashboard
+Text: Track leads, calls answered, tee times booked, memberships sold, event registrations, and member satisfaction.
+
+Card 4:
+Title: AI Tee Time Automation
+Text: Let members and guests book tee times instantly while your team stays focused on the club experience.
+
+Card 5:
+Title: Intelligent CRM
+Text: Centralize member and prospect data in one intelligent system built for golf clubs.
+
+Card 6:
+Title: AI Concierge
+Text: Give members instant help with tee times, dining reservations, events, tours, and club questions.
+
+5. Before vs After Section
+Split screen.
+
+Without Fairway360:
+- Missed calls
+- Slow follow-up
+- Manual lead tracking
+- Empty tee times
+- Disconnected systems
+
+With Fairway360:
+- Every call answered
+- Every lead captured
+- Automated follow-up
+- Full tee sheet
+- One connected platform
+
+6. Dashboard Preview Section
+Create a dark green dashboard mockup showing:
+- Leads Today: 128
+- Calls Answered: 247
+- Memberships Sold: 18
+- Tee Times Booked: 156
+- Event Registrations: 73
+- Member Satisfaction: 4.8 stars
+
+7. CTA Section
+Headline:
+Operate Your Club Like The Top 1%.
+
+Text:
+Fairway360 gives golf courses and country clubs the AI infrastructure to grow memberships, increase engagement, and automate daily operations.
+
+Button:
+Book Your Fairway360 Demo
+
+8. Footer
+- Fairway360
+- AI Club Operation System
+- Links: Platform, Features, Demo, Contact
+
+Technical requirements:
+- Use React + Vite
+- Use Tailwind CSS
+- Fully responsive mobile-first design
+- Smooth animations
+- Glassmorphism cards
+- Dark green gradient background
+- Gold glowing borders
+- Premium typography
+- Rounded image cards
+- Hover effects
+- Sticky navigation
+- Clean reusable components
+- Make it look polished enough for investors, country club owners, and enterprise buyers
+
+Important:
+Do not make it look cartoonish.
+Do not use cheap generic icons.
+Make it feel expensive, elegant, and trustworthy.
+The website should visually match the uploaded Fairway360 infographic.

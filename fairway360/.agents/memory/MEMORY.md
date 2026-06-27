@@ -1,0 +1,1 @@
+- [Fairway360 cross-portal shared state](fairway360-portal-state.md) — member/staff portals are separate routes that full-reload; share demo state via localStorage, not just context.

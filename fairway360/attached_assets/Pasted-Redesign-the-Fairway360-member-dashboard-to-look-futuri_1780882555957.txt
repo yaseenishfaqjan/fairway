@@ -1,0 +1,116 @@
+Redesign the Fairway360 member dashboard to look futuristic, premium, and extremely easy to understand.
+
+Keep the Fairway360 brand, but upgrade the UI from basic country club style to luxury golf-tech SaaS.
+
+Design Direction:
+- Futuristic country club app
+- Premium mobile-first dashboard
+- Deep emerald green background gradients
+- Black glassmorphism panels
+- Gold accent highlights
+- White text with strong contrast
+- Clean icons
+- Large readable cards
+- Smooth rounded corners
+- Subtle glow effects
+- Modern app feel like Tesla + private country club + AI software
+
+Fix the dashboard layout:
+
+Top Header:
+- Full-width premium header
+- Fairway360 logo on left
+- Notification bell
+- Member profile circle
+- Clean logout icon
+- Add small text: “AI Club Operation System”
+
+Greeting Section:
+Replace “Good morning, James” with:
+“Good morning, James”
+“Your club experience is ready.”
+
+Add quick status badges:
+- Next Tee Time
+- Dining Open
+- Cart Delivery Available
+- Account Good Standing
+
+Main Navigation:
+Make navigation easier with large icon buttons:
+- Home
+- Book Tee Time
+- Order Food
+- Events
+- Account
+- Concierge
+
+The “Order Food” button should be highly visible because members will use it while golfing.
+
+Dashboard Cards:
+Replace plain white cards with futuristic glass cards.
+
+Cards should show:
+1. Handicap Index: 8.4
+2. Rounds Played: 37
+3. Account Balance: $142.50
+4. Member Since: 2019
+5. Next Tee Time
+6. Food Orders
+7. Upcoming Events
+8. Club Announcements
+
+Add a “Quick Actions” section:
+- Book Tee Time
+- Order Food to Cart
+- Reserve Dining
+- Request Cart Assistance
+- Contact Concierge
+- View Statement
+
+Add AI Concierge Card:
+Title:
+“Fairway360 AI Concierge”
+
+Text:
+“Ask anything about tee times, food ordering, events, account balance, or club services.”
+
+Button:
+“Ask Concierge”
+
+Food Ordering Card:
+Title:
+“Order Food While You Play”
+
+Text:
+“Choose your hole, add food to your cart, and have the clubhouse prepare your order.”
+
+Buttons:
+“Order Now”
+“View Menu”
+
+Member Experience:
+Make the interface simple enough for older country club members:
+- Bigger text
+- Clear labels
+- No clutter
+- Obvious buttons
+- Strong spacing
+- Keep everything thumb-friendly on mobile
+
+Bottom Navigation:
+Add fixed bottom mobile navigation:
+- Home
+- Tee Time
+- Dining
+- Concierge
+- Account
+
+Animations:
+- Smooth fade-in cards
+- Hover/tap effects
+- Soft glowing gold highlights
+- No distracting animations
+
+Important:
+Make this dashboard look like a polished app that a private country club would proudly give to its members. It should feel premium, futuristic, and easy to use.

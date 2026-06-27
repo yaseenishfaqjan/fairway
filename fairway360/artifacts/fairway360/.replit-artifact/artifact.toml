@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Fairway360"
+version = "1.0.0"
+id = "artifacts/fairway360"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19688
+
+[services.development]
+run = "pnpm --filter @workspace/fairway360 run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/fairway360", "run", "build" ]
+publicDir = "artifacts/fairway360/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19688"
+BASE_PATH = "/"

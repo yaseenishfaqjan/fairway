@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+build/
+out-tsc/
+*.tsbuildinfo
+client/dist/
+server/dist/
+coverage/
+
+# local data / caches
+.pgdata/
+.cache/
+.local/
+tmp/
+
+# logs
+*.log
+
+# secrets / env (never commit real values; keep .env.example)
+.env
+.env.*
+!.env.example
+
+# os
+.DS_Store
+Thumbs.db
