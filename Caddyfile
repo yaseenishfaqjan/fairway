@@ -1,0 +1,6 @@
+# Caddy auto-provisions and renews HTTPS for {$DOMAIN} via Let's Encrypt.
+# All traffic is reverse-proxied to the Fairway360 app on :5000.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:5000
+}

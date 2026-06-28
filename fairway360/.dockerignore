@@ -1,0 +1,10 @@
+**/node_modules
+.pnpm-store
+**/dist
+**/*.tsbuildinfo
+.git
+*.log
+.pgdata
+.cache
+.local
+.expo
