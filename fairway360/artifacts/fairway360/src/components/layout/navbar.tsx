@@ -1,11 +1,22 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { BrandLogo } from "@/components/brand-logo";
+import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const [location] = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+
+  // §4.6 — strengthen the bar's background once the user scrolls past the hero edge.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 30);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const links = [
     { href: "/platform", label: "Platform" },
@@ -17,7 +28,14 @@ export function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/60 bg-background/80 backdrop-blur-md">
+    <header
+      className={cn(
+        "sticky top-0 z-50 w-full backdrop-blur-md transition-all duration-300",
+        scrolled
+          ? "border-b border-border/60 bg-background/90 shadow-[0_8px_30px_-12px_hsl(160_60%_4%/0.5)]"
+          : "border-b border-transparent bg-background/40",
+      )}
+    >
       <div className="container mx-auto flex h-20 items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center" data-testid="link-home">
           <BrandLogo size="md" tone="light" />

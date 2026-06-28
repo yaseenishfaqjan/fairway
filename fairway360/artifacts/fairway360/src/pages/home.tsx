@@ -10,6 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BrandLogo } from "@/components/brand-logo";
 import { Seo, SITE_URL } from "@/components/seo";
+import { Reveal, RevealText } from "@/components/anim/reveal";
+import { CountUp } from "@/components/anim/count-up";
+import { Magnetic } from "@/components/anim/magnetic";
 
 const HOME_JSONLD: Record<string, unknown>[] = [
   {
@@ -102,12 +105,14 @@ function HeroSection() {
             transition={{ duration: 0.5, delay: 0.16 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Button asChild size="lg" className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90 text-base h-14 px-8">
-              <Link href="/demo">
-                Request Demo <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline" className="w-full sm:w-auto border-white/20 bg-white/5 text-white hover:bg-white/10 text-base h-14 px-7">
+            <Magnetic className="w-full sm:w-auto">
+              <Button asChild size="lg" className="fw-sheen w-full bg-accent text-accent-foreground hover:bg-accent/90 text-base h-14 px-8">
+                <Link href="/demo">
+                  Request Demo <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </Magnetic>
+            <Button asChild size="lg" variant="outline" className="fw-sheen w-full sm:w-auto border-white/20 bg-white/5 text-white hover:bg-white/10 text-base h-14 px-7">
               <a href="#how-it-works">
                 <span className="mr-2 flex h-6 w-6 items-center justify-center rounded-full border border-white/30">
                   <Play className="h-3 w-3 fill-current" />
@@ -204,7 +209,7 @@ function HeroDashboardMock() {
             {stats.map((s) => (
               <div key={s.label} className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
                 <div className="text-[10px] text-white/55 truncate">{s.label}</div>
-                <div className="mt-1 text-xl font-semibold text-white font-display">{s.val}</div>
+                <div className="mt-1 text-xl font-semibold text-white font-display"><CountUp to={Number(s.val)} /></div>
                 <div className="mt-0.5 flex items-center gap-1 text-[10px] text-[hsl(145_58%_55%)]">
                   <TrendingUp className="h-3 w-3" /> {s.delta}
                   <span className="text-white/35">vs yesterday</span>
@@ -215,7 +220,7 @@ function HeroDashboardMock() {
 
           <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
             <div className="text-[10px] text-white/55">Revenue Opportunities</div>
-            <div className="text-xl font-semibold text-white font-display">$8,420</div>
+            <div className="text-xl font-semibold text-white font-display"><CountUp to={8420} prefix="$" /></div>
             <div className="text-[10px] text-white/40 mb-2">Potential Revenue</div>
             <svg viewBox="0 0 300 60" className="h-14 w-full" preserveAspectRatio="none">
               <defs>
@@ -281,7 +286,7 @@ function FeaturesGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.4, delay: i * 0.06 }}
-            className="hover-lift rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center transition-colors hover:border-[hsl(145_58%_45%)]/40 hover:bg-white/[0.05]"
+            className="hover-lift fw-glow rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center hover:border-[hsl(145_58%_45%)]/40 hover:bg-white/[0.05]"
           >
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(145_58%_45%)]/15 text-[hsl(145_58%_55%)]">
               <f.icon className="h-6 w-6" />
@@ -311,7 +316,7 @@ function ProblemsSection() {
       <div className="container mx-auto">
         <div className="text-center mb-16 max-w-3xl mx-auto">
           <p className="eyebrow text-accent mb-5">The Cost of Manual Operations</p>
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-4">Your Club Is Losing Revenue Every Day</h2>
+          <RevealText as="h2" className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-4">Your Club Is Losing Revenue Every Day</RevealText>
           <p className="text-xl text-white/60">Manual processes are costing you members, events, and repeat players.</p>
         </div>
         

@@ -402,6 +402,149 @@
   to { opacity: 1; }
 }
 
+/* ============================================================
+   Ambient layer (site-wide, presentation-only) — §4 of the spec
+   ============================================================ */
+@layer utilities {
+  /* Aurora: soft drifting color fields behind everything. */
+  .fw-aurora {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  .fw-aurora::before,
+  .fw-aurora::after {
+    content: "";
+    position: absolute;
+    width: 60vmax;
+    height: 60vmax;
+    border-radius: 50%;
+    filter: blur(46px);
+    opacity: 0.16;
+    will-change: transform;
+  }
+  .fw-aurora::before {
+    top: -18vmax;
+    left: -10vmax;
+    background: radial-gradient(circle, hsl(150 60% 42%), transparent 60%);
+    animation: fw-aurora-a 28s ease-in-out infinite alternate;
+  }
+  .fw-aurora::after {
+    bottom: -22vmax;
+    right: -12vmax;
+    background: radial-gradient(circle, hsl(43 70% 55%), transparent 60%);
+    animation: fw-aurora-b 34s ease-in-out infinite alternate;
+  }
+
+  /* Drifting grid, faded toward the edges. */
+  .fw-grid {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(hsl(0 0% 100% / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(0 0% 100% / 0.04) 1px, transparent 1px);
+    background-size: 54px 54px;
+    -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 30%, transparent 75%);
+    animation: fw-grid-drift 24s linear infinite;
+  }
+
+  /* Static film grain — texture only, never animated. */
+  .fw-grain {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Cursor spotlight — center fed via --mx/--my (set in JS). */
+  .fw-spotlight {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    background: radial-gradient(
+      440px circle at var(--mx, 50%) var(--my, 0%),
+      hsl(150 60% 50% / 0.10),
+      transparent 60%
+    );
+    opacity: 0;
+    transition: opacity 400ms ease;
+  }
+  .fw-spotlight[data-active="true"] { opacity: 1; }
+
+  /* Scroll-progress bar (scaleX driven by JS). */
+  .fw-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 60;
+    transform-origin: 0 50%;
+    background: linear-gradient(90deg, hsl(150 60% 42%), hsl(43 70% 55%));
+    box-shadow: 0 0 10px hsl(150 60% 50% / 0.6);
+  }
+
+  /* Seamless marquee track (duplicate content inside). */
+  .fw-marquee { overflow: hidden; }
+  .fw-marquee-track {
+    display: flex;
+    width: max-content;
+    animation: fw-marquee 30s linear infinite;
+  }
+  .fw-marquee:hover .fw-marquee-track { animation-play-state: paused; }
+
+  /* Diagonal sheen sweep on hover (apply to buttons/cards). */
+  .fw-sheen { position: relative; overflow: hidden; }
+  .fw-sheen::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -120%;
+    width: 60%;
+    height: 100%;
+    transform: skewX(-20deg);
+    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.18), transparent);
+    transition: left 600ms ease;
+    pointer-events: none;
+  }
+  .fw-sheen:hover::after { left: 140%; }
+
+  /* Accent glow that fades in on hover (cards/panels). */
+  .fw-glow {
+    transition: box-shadow 350ms ease, border-color 350ms ease, transform 220ms cubic-bezier(0.22,1,0.36,1);
+  }
+  .fw-glow:hover {
+    box-shadow: 0 10px 40px -12px hsl(150 60% 30% / 0.55), 0 0 0 1px hsl(43 70% 55% / 0.25);
+  }
+}
+
+@keyframes fw-aurora-a {
+  from { transform: translate(0, 0) scale(1.06) rotate(0deg); }
+  to   { transform: translate(6%, 4%) scale(1.14) rotate(1deg); }
+}
+@keyframes fw-aurora-b {
+  from { transform: translate(0, 0) scale(1.08) rotate(0deg); }
+  to   { transform: translate(-5%, -3%) scale(1.16) rotate(-1deg); }
+}
+@keyframes fw-grid-drift {
+  from { background-position: 0 0, 0 0; }
+  to   { background-position: 54px 54px, 54px 54px; }
+}
+@keyframes fw-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
 /* Accessibility: honor reduced-motion globally. Kills animations,
    transitions, transforms, and smooth scroll for users who opt out. */
 @media (prefers-reduced-motion: reduce) {
