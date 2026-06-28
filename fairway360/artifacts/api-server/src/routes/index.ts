@@ -10,6 +10,7 @@ import agentRouter from "./agent";
 import channelsRouter from "./channels";
 import realtimeRouter from "./realtime";
 import pushRouter from "./push";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(agentRouter);
 router.use(channelsRouter);
 router.use(realtimeRouter);
 router.use(pushRouter);
+router.use(notificationsRouter);
 
 export default router;

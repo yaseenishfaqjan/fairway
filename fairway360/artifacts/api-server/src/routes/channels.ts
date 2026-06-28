@@ -12,24 +12,24 @@ import { detectEscalation, holdingMessage, type EscalationResult } from "../lib/
 import { isAnyStaffAvailable } from "../lib/presence";
 import { isDelegated } from "../lib/delegation";
 import { allowAgentReply } from "../lib/ai-throttle";
-import { sendToUsers, pushEnabled } from "../lib/push";
+import { notifyMany } from "../lib/notify";
 import { logger } from "../lib/logger";
 
-// Push supervisors when an escalation is raised (best-effort, env-gated).
+// Notify supervisors (in-app bell + push) when an escalation is raised.
 async function notifySupervisors(clubId: string, memberName: string, level: number, channelName: string): Promise<void> {
-  if (!pushEnabled()) return;
   try {
     const sups = await db
       .select({ id: users.id })
       .from(users)
       .where(and(eq(users.clubId, clubId), eq(users.role, "supervisor")));
-    await sendToUsers(clubId, sups.map((s) => s.id), {
+    await notifyMany(clubId, sups.map((s) => s.id), {
+      type: "escalation",
       title: `Level ${level} escalation`,
       body: `${memberName} in ${channelName} needs attention`,
       link: "/portal/supervisor",
     });
   } catch (err) {
-    logger.debug({ err }, "escalation: supervisor push failed");
+    logger.debug({ err }, "escalation: supervisor notify failed");
   }
 }
 

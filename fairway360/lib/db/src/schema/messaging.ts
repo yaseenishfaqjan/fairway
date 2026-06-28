@@ -160,3 +160,21 @@ export const escalations = pgTable("escalations", {
 });
 
 export type Escalation = typeof escalations.$inferSelect;
+
+/** Persistent in-app notifications (bell feed). Delivered live via SSE + push. */
+export const notifications = pgTable("notifications", {
+  id: pk(),
+  clubId: uuid("club_id")
+    .notNull()
+    .references(() => clubs.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull().default("info"),
+  title: text("title").notNull(),
+  body: text("body"),
+  link: text("link"),
+  read: boolean("read").notNull().default(false),
+  ...timestamps,
+});
+export type Notification = typeof notifications.$inferSelect;

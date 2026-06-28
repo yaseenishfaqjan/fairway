@@ -1,5 +1,6 @@
 import { useState, type ComponentType, type ReactNode } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useNotifications } from "@/hooks/use-notifications";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Bell, LogOut, CheckCheck } from "lucide-react";
 import { PortalLogo } from "@/components/portal/portal-logo";
@@ -43,13 +44,15 @@ const toneDot: Record<string, string> = {
 
 function NotificationBell({
   items,
+  unread,
   align,
 }: {
   items: PortalNotification[];
+  unread: number;
   align: "left" | "right";
 }) {
   const [open, setOpen] = useState(false);
-  const count = items.length;
+  const count = unread;
 
   return (
     <div className="relative">
@@ -97,7 +100,7 @@ function NotificationBell({
                 )}
               </div>
 
-              {count === 0 ? (
+              {items.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
                   <CheckCheck className="h-7 w-7 text-emerald-400" />
                   <p className="text-sm text-white/60">You're all caught up.</p>
@@ -149,11 +152,22 @@ export function PortalShell({
   active,
   onSelect,
   user,
-  notifications = [],
   showPresence = false,
   children,
 }: PortalShellProps) {
   const [open, setOpen] = useState(false);
+  const [, setLocation] = useLocation();
+  const { items: notifs, unread, markRead } = useNotifications();
+  const bellItems: PortalNotification[] = notifs.map((n) => ({
+    id: n.id,
+    title: n.title,
+    detail: n.body ?? undefined,
+    tone: n.type === "escalation" ? "red" : n.type === "order" ? "gold" : "default",
+    onClick: () => {
+      void markRead(n.id);
+      if (n.link) setLocation(n.link);
+    },
+  }));
 
   function pick(key: string) {
     onSelect(key);
@@ -167,7 +181,7 @@ export function PortalShell({
           <Link href="/" className="flex items-center" data-testid="link-portal-home">
             <PortalLogo size="sm" />
           </Link>
-          <NotificationBell items={notifications} align="left" />
+          <NotificationBell items={bellItems} unread={unread} align="left" />
         </div>
         <div className="px-5 pb-5 pt-1">
           <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent/90">
@@ -297,7 +311,7 @@ export function PortalShell({
         </button>
         <PortalLogo size="sm" />
         <div className="flex items-center gap-1">
-          <NotificationBell items={notifications} align="right" />
+          <NotificationBell items={bellItems} unread={unread} align="right" />
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
             {user.initials}
           </div>

@@ -52,3 +52,23 @@ export function subscribeChannels(clubId: string, res: Response): () => void {
   emitter.on(ch, listener);
   return () => emitter.off(ch, listener);
 }
+
+// ── Per-user in-app notifications ───────────────────────────────────────────
+export type NotificationEvent = { type: "notification" };
+
+const notifTopic = (userId: string): string => `notif:${userId}`;
+
+export function publishNotification(userId: string): void {
+  emitter.emit(notifTopic(userId), { type: "notification" } as NotificationEvent);
+}
+
+/** Stream a single user's notification pings to an SSE response. */
+export function subscribeNotifications(userId: string, res: Response): () => void {
+  const ch = notifTopic(userId);
+  const listener = (ev: NotificationEvent): void => {
+    res.write(`event: ${ev.type}\n`);
+    res.write(`data: ${JSON.stringify(ev)}\n\n`);
+  };
+  emitter.on(ch, listener);
+  return () => emitter.off(ch, listener);
+}
