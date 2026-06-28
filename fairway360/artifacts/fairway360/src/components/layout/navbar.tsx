@@ -63,7 +63,7 @@ export function Navbar() {
           >
             Log In
           </Link>
-          <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm tracking-wide" size="sm">
+          <Button asChild className="fw-sheen bg-accent text-accent-foreground hover:bg-accent/90 shadow-sm tracking-wide" size="sm">
             <Link href="/demo" data-testid="link-nav-demo">Book a Demo</Link>
           </Button>
         </nav>

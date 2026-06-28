@@ -91,6 +91,46 @@ export interface DelegateInput {
   durationMinutes: number;
 }
 
+export type CreateStaffInputRole = typeof CreateStaffInputRole[keyof typeof CreateStaffInputRole];
+
+
+export const CreateStaffInputRole = {
+  employee: 'employee',
+  supervisor: 'supervisor',
+} as const;
+
+export interface CreateStaffInput {
+  name: string;
+  email: string;
+  role: CreateStaffInputRole;
+  jobTitle: string;
+  phone?: string;
+}
+
+export interface CreateMemberInput {
+  name: string;
+  email: string;
+  tier?: string;
+  phone?: string;
+}
+
+export interface InviteResult {
+  id: string;
+  inviteLink: string;
+  emailed: boolean;
+}
+
+export interface ClubMember {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  tier: string;
+  memberNumber: string;
+  status: string;
+  pending: boolean;
+}
+
 export interface MessagingChannelStat {
   name: string;
   messages: number;

@@ -29,7 +29,7 @@ import {
   useListBookings, useListStaff, useListTasks, useUpdateTask, useResolveRequest,
   useMessageStaff, useUpdateLead, useUpdateBooking, useCreateTask,
   useListEscalations, useResolveEscalation,
-  useGetDelegation, useStartDelegation, useEndDelegation, useGetMessagingAnalytics,
+  useGetDelegation, useStartDelegation, useEndDelegation, useGetMessagingAnalytics, useListClubMembers,
   getListRequestsQueryKey, getListTasksQueryKey, getListLeadsQueryKey,
   getGetOverviewQueryKey, getListBookingsQueryKey, getListEscalationsQueryKey,
   getGetDelegationQueryKey,
@@ -38,12 +38,14 @@ import {
   supervisorAccount,
   type MemberOnCourse, type CourseStatus,
 } from "@/lib/portal-data";
+import { AddEmployeeDialog, AddMemberDialog } from "@/components/portal/onboarding-dialogs";
 
-type SectionKey = "overview" | "team" | "map" | "service" | "channels" | "escalations" | "leads" | "bookings" | "tasks";
+type SectionKey = "overview" | "team" | "members" | "map" | "service" | "channels" | "escalations" | "leads" | "bookings" | "tasks";
 
 const NAV: PortalNavItem[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "team", label: "Team", icon: Users },
+  { key: "members", label: "Members", icon: UserCheck },
   { key: "map", label: "Course Map", icon: MapIcon },
   { key: "service", label: "F&B Oversight", icon: Coffee },
   { key: "channels", label: "Channels", icon: MessageSquare },
@@ -140,6 +142,9 @@ export function SupervisorPortal() {
   const endDeleg = useEndDelegation();
   const delegation = delegationQ.data;
   const messagingAnalytics = useGetMessagingAnalytics().data;
+  const clubMembers = useListClubMembers().data ?? [];
+  const [addEmpOpen, setAddEmpOpen] = useState(false);
+  const [addMemOpen, setAddMemOpen] = useState(false);
   const resolveRequestM = useResolveRequest();
   const messageStaff = useMessageStaff();
   const updateLead = useUpdateLead();
@@ -591,9 +596,14 @@ export function SupervisorPortal() {
 
           {section === "team" && (
             <Glass className="p-5">
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="font-display text-lg font-semibold text-white">Team Roster</h2>
-                <span className="text-sm text-white/45">{onShift} on shift · {team.length} total</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-white/45">{onShift} on shift · {team.length} total</span>
+                  <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setAddEmpOpen(true)} data-testid="button-add-employee">
+                    <Plus className="mr-1.5 h-4 w-4" />Add Employee
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 {team.map((t, i) => (
@@ -621,6 +631,48 @@ export function SupervisorPortal() {
                   </Glass>
                 ))}
               </div>
+            </Glass>
+          )}
+
+          {section === "members" && (
+            <Glass className="p-5">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-display text-lg font-semibold text-white">Member Directory</h2>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-white/45">{clubMembers.length} members</span>
+                  <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setAddMemOpen(true)} data-testid="button-add-member">
+                    <Plus className="mr-1.5 h-4 w-4" />Add Member
+                  </Button>
+                </div>
+              </div>
+              {clubMembers.length === 0 ? (
+                <p className="py-8 text-center text-sm text-white/45">No members yet. Add your first member to send them a portal invite.</p>
+              ) : (
+                <div className="space-y-2">
+                  {clubMembers.map((m, i) => (
+                    <Glass key={m.id} i={i} className="flex flex-wrap items-center justify-between gap-3 p-4" data-testid={`member-${m.id}`}>
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-sm font-bold text-accent">
+                          {m.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}
+                        </span>
+                        <div>
+                          <div className="font-medium text-white">{m.name}</div>
+                          <div className="text-xs text-white/50">{m.email}</div>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-white/55">{m.memberNumber}</span>
+                        <span className="rounded-full border border-accent/30 bg-accent/15 px-2.5 py-1 text-accent">{m.tier}</span>
+                        {m.pending ? (
+                          <span className="rounded-full border border-orange-400/25 bg-orange-500/15 px-2.5 py-1 text-orange-300">Invite pending</span>
+                        ) : (
+                          <span className="rounded-full border border-emerald-400/25 bg-emerald-500/15 px-2.5 py-1 text-emerald-300">Active</span>
+                        )}
+                      </div>
+                    </Glass>
+                  ))}
+                </div>
+              )}
             </Glass>
           )}
 
@@ -984,6 +1036,8 @@ export function SupervisorPortal() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <AddEmployeeDialog open={addEmpOpen} onOpenChange={setAddEmpOpen} />
+      <AddMemberDialog open={addMemOpen} onOpenChange={setAddMemOpen} />
     </PortalShell>
   );
 }

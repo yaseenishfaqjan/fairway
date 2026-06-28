@@ -559,6 +559,36 @@ export const ListStaffResponseItem = zod.object({
 export const ListStaffResponse = zod.array(ListStaffResponseItem)
 
 
+export const CreateStaffBody = zod.object({
+  "name": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['employee', 'supervisor']),
+  "jobTitle": zod.string(),
+  "phone": zod.string().optional()
+})
+
+
+export const ListClubMembersResponseItem = zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "tier": zod.string(),
+  "memberNumber": zod.string(),
+  "status": zod.string(),
+  "pending": zod.boolean()
+})
+export const ListClubMembersResponse = zod.array(ListClubMembersResponseItem)
+
+
+export const CreateMemberBody = zod.object({
+  "name": zod.string(),
+  "email": zod.string(),
+  "tier": zod.string().optional(),
+  "phone": zod.string().optional()
+})
+
+
 export const MessageStaffParams = zod.object({
   "id": zod.coerce.string()
 })

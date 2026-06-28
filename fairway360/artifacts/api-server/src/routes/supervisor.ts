@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm";
 import {
   db,
+  clubs,
   events,
   tasks,
   timeOffRequests,
@@ -39,14 +40,17 @@ import {
   MessageStaffBody,
   UpdateBookingBody,
   StartDelegationBody,
+  CreateStaffBody,
+  CreateMemberBody,
 } from "@workspace/api-zod";
-import { asyncHandler, notFound } from "../lib/http";
+import { asyncHandler, notFound, badRequest } from "../lib/http";
 import { requireAuth, requireRole, requireStaff } from "../middleware/auth";
 import { loadTeam } from "../lib/team";
 import { sendSms } from "../lib/sms";
 import { fmtAgoShort } from "../lib/format";
 import { setDelegation, endDelegation, getDelegation, type Autonomy } from "../lib/delegation";
 import { publishChannelEvent } from "../lib/realtime";
+import { issueInvite, initialsOf } from "../lib/invite";
 import {
   toClubEvent,
   toTask,
@@ -580,6 +584,118 @@ router.get(
         .filter((c) => c.messages > 0)
         .sort((a, b) => b.messages - a.messages),
     });
+  }),
+);
+
+// ── Onboarding: club admin adds staff & members (invite-link to set password) ──
+router.post(
+  "/staff",
+  ...supervisor,
+  asyncHandler(async (req, res) => {
+    const { clubId } = req.auth!;
+    const { name, email, role, jobTitle, phone } = CreateStaffBody.parse(req.body);
+    const normEmail = email.toLowerCase().trim();
+    const [dup] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.clubId, clubId), eq(users.email, normEmail)));
+    if (dup) throw badRequest("A user with that email already exists at this club.");
+    const [club] = await db.select({ name: clubs.name }).from(clubs).where(eq(clubs.id, clubId));
+    const [user] = await db
+      .insert(users)
+      .values({
+        clubId,
+        email: normEmail,
+        role,
+        name: name.trim(),
+        initials: initialsOf(name),
+        phone: phone?.trim() || null,
+        status: "active",
+        passwordHash: null,
+      })
+      .returning();
+    const [{ c }] = await db
+      .select({ c: count() })
+      .from(staffProfiles)
+      .where(eq(staffProfiles.clubId, clubId));
+    await db.insert(staffProfiles).values({
+      clubId,
+      userId: user.id,
+      jobTitle: jobTitle.trim(),
+      employeeNo: `EMP-${String((c ?? 0) + 1).padStart(3, "0")}`,
+      currentStatus: "Clocked Out",
+    });
+    const invite = await issueInvite(user.id, name, normEmail, club?.name ?? "your club");
+    res.status(201).json({ id: user.id, inviteLink: invite.link, emailed: invite.emailed });
+  }),
+);
+
+router.get(
+  "/members",
+  ...supervisor,
+  asyncHandler(async (req, res) => {
+    const { clubId } = req.auth!;
+    const rows = await db
+      .select({ m: members, u: users })
+      .from(members)
+      .innerJoin(users, eq(members.userId, users.id))
+      .where(eq(members.clubId, clubId))
+      .orderBy(desc(members.createdAt));
+    res.json(
+      rows.map(({ m, u }) => ({
+        id: m.id,
+        userId: u.id,
+        name: u.name,
+        email: u.email,
+        tier: m.tier,
+        memberNumber: m.memberNumber,
+        status: u.status,
+        pending: !u.passwordHash,
+      })),
+    );
+  }),
+);
+
+router.post(
+  "/members",
+  ...supervisor,
+  asyncHandler(async (req, res) => {
+    const { clubId } = req.auth!;
+    const { name, email, tier, phone } = CreateMemberBody.parse(req.body);
+    const normEmail = email.toLowerCase().trim();
+    const [dup] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.clubId, clubId), eq(users.email, normEmail)));
+    if (dup) throw badRequest("A user with that email already exists at this club.");
+    const [club] = await db.select({ name: clubs.name }).from(clubs).where(eq(clubs.id, clubId));
+    const [user] = await db
+      .insert(users)
+      .values({
+        clubId,
+        email: normEmail,
+        role: "member",
+        name: name.trim(),
+        initials: initialsOf(name),
+        phone: phone?.trim() || null,
+        status: "active",
+        passwordHash: null,
+      })
+      .returning();
+    const [{ c }] = await db
+      .select({ c: count() })
+      .from(members)
+      .where(eq(members.clubId, clubId));
+    await db.insert(members).values({
+      clubId,
+      userId: user.id,
+      memberNumber: `M-${String((c ?? 0) + 1).padStart(4, "0")}`,
+      tier: tier?.trim() || "Standard",
+      memberSince: new Date().getFullYear(),
+      balance: "0",
+    });
+    const invite = await issueInvite(user.id, name, normEmail, club?.name ?? "your club");
+    res.status(201).json({ id: user.id, inviteLink: invite.link, emailed: invite.emailed });
   }),
 );
 

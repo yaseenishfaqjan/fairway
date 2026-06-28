@@ -580,6 +580,48 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/TeamMember" }
+    post:
+      operationId: createStaff
+      tags: [supervisor]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateStaffInput" }
+      responses:
+        "201":
+          description: Staff member created + invited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteResult" }
+        "400": { $ref: "#/components/responses/Error" }
+  /members:
+    get:
+      operationId: listClubMembers
+      tags: [supervisor]
+      responses:
+        "200":
+          description: Club member roster
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ClubMember" }
+    post:
+      operationId: createMember
+      tags: [supervisor]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateMemberInput" }
+      responses:
+        "201":
+          description: Member created + invited
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteResult" }
+        "400": { $ref: "#/components/responses/Error" }
   /staff/{id}/message:
     post:
       operationId: messageStaff
@@ -912,6 +954,42 @@ components:
           enum: [low, medium, high, full]
         durationMinutes: { type: number }
       required: [autonomy, durationMinutes]
+    CreateStaffInput:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        role: { type: string, enum: [employee, supervisor] }
+        jobTitle: { type: string }
+        phone: { type: string }
+      required: [name, email, role, jobTitle]
+    CreateMemberInput:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        tier: { type: string }
+        phone: { type: string }
+      required: [name, email]
+    InviteResult:
+      type: object
+      properties:
+        id: { type: string }
+        inviteLink: { type: string }
+        emailed: { type: boolean }
+      required: [id, inviteLink, emailed]
+    ClubMember:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        name: { type: string }
+        email: { type: string }
+        tier: { type: string }
+        memberNumber: { type: string }
+        status: { type: string }
+        pending: { type: boolean }
+      required: [id, userId, name, email, tier, memberNumber, status, pending]
     MessagingChannelStat:
       type: object
       properties:
