@@ -150,6 +150,16 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface ForgotPasswordInput {
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  token: string;
+  /** @minLength 8 */
+  password: string;
+}
+
 export interface AuthUser {
   id: string;
   name: string;

@@ -117,7 +117,10 @@ export function PortalLogin() {
           ))}
         </div>
 
-        <div className="mt-10 text-center">
+        <div className="mt-8 flex flex-col items-center gap-3 text-center">
+          <Link href="/portal/forgot" className="text-sm text-accent hover:underline" data-testid="link-forgot-password">
+            Forgot your password?
+          </Link>
           <Link href="/" className="text-sm text-white/50 hover:text-white transition-colors" data-testid="link-back-site">
             ← Back to fairway360.com
           </Link>

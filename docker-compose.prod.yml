@@ -36,6 +36,8 @@ services:
       PORT: "5000"
       DATABASE_URL: postgres://fairway:${DB_PASSWORD}@db:5432/fairway360
       SESSION_SECRET: ${SESSION_SECRET}
+      # Public base URL — used to build password-reset links in emails.
+      APP_URL: https://${DOMAIN}
       # Optional integrations — leave blank to run with graceful fallbacks.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CONCIERGE_MODEL: ${CONCIERGE_MODEL:-}
@@ -49,6 +51,32 @@ services:
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
     expose:
       - "5000"
+
+  # Daily database backup: dumps to ./backups, keeps the most recent 7.
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "backup service started";
+        while true; do
+          ts=$$(date +%Y%m%d_%H%M%S);
+          if pg_dump -h db -U fairway -d fairway360 > /backups/fairway360_$$ts.sql; then
+            echo "backup written: $$ts";
+          else
+            echo "backup FAILED: $$ts"; rm -f /backups/fairway360_$$ts.sql;
+          fi;
+          ls -1t /backups/*.sql 2>/dev/null | tail -n +8 | xargs -r rm -f;
+          sleep 86400;
+        done
 
   caddy:
     image: caddy:2

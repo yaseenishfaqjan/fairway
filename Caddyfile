@@ -2,5 +2,6 @@
 # All traffic is reverse-proxied to the Fairway360 app on :5000.
 {$DOMAIN} {
 	encode zstd gzip
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	reverse_proxy app:5000
 }

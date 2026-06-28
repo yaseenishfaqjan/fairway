@@ -19,6 +19,7 @@ import { Events } from "@/pages/events";
 import { Demo } from "@/pages/demo";
 import { PrivacyPolicy, TermsOfService } from "@/pages/legal";
 import { PortalLogin } from "@/pages/portal/login";
+import { ForgotPassword, ResetPassword } from "@/pages/portal/reset";
 import { SupervisorPortal } from "@/pages/portal/supervisor";
 import { EmployeesPortal } from "@/pages/portal/employees";
 import { MembersPortal } from "@/pages/portal/members";
@@ -58,6 +59,8 @@ function Router() {
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/portal" component={PortalLogin} />
+      <Route path="/portal/forgot" component={ForgotPassword} />
+      <Route path="/portal/reset" component={ResetPassword} />
       <Route path="/portal/supervisor">
         <RequireRole role="supervisor" component={SupervisorPortal} />
       </Route>

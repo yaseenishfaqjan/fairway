@@ -4,6 +4,7 @@ import {
   pgEnum,
   pgTable,
   text,
+  timestamp,
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -34,6 +35,9 @@ export const users = pgTable(
     initials: text("initials"),
     phone: text("phone"),
     status: userStatus("status").notNull().default("active"),
+    // Password reset: a SHA-256 hash of the emailed token + its expiry.
+    passwordResetTokenHash: text("password_reset_token_hash"),
+    passwordResetExpiresAt: timestamp("password_reset_expires_at"),
     ...timestamps,
   },
   (t) => [unique("users_club_email_unique").on(t.clubId, t.email)],

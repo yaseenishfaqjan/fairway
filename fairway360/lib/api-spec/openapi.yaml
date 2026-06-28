@@ -48,6 +48,39 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/AuthUser" }
         "401": { $ref: "#/components/responses/Error" }
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      summary: Request a password-reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ForgotPasswordInput" }
+      responses:
+        "200":
+          description: Always 200 (does not reveal whether the email exists)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      summary: Set a new password using a reset token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ResetPasswordInput" }
+      responses:
+        "200":
+          description: Password updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
   /auth/logout:
     post:
       operationId: logout
@@ -947,6 +980,17 @@ components:
         email: { type: string }
         password: { type: string }
       required: [email, password]
+    ForgotPasswordInput:
+      type: object
+      properties:
+        email: { type: string }
+      required: [email]
+    ResetPasswordInput:
+      type: object
+      properties:
+        token: { type: string }
+        password: { type: string, minLength: 8 }
+      required: [token, password]
     AuthUser:
       type: object
       properties:
