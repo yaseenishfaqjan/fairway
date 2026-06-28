@@ -1,0 +1,97 @@
+# Fairway360 — VPS stack that plugs into an EXISTING nginx reverse proxy
+# (e.g. scalaro-nginx-1). No Caddy, no published 80/443 — your nginx terminates
+# TLS and proxies to the app container by name on the `fairway360net` network.
+#
+#   db    : PostgreSQL with a persistent volume
+#   app   : Fairway360 image (API + built SPA) on :5000, reachable as fairway360-app
+#   backup: daily pg_dump, keeps the latest 7
+#
+# Usage:
+#   docker login && docker pull "$(grep ^APP_IMAGE= .env | cut -d= -f2)"
+#   docker compose -f docker-compose.vps.yml up -d
+#   docker network connect fairway360net scalaro-nginx-1     # once
+# Then add the nginx server block (see DEPLOY.md) and reload nginx.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fairway
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: fairway360
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fairway -d fairway360"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: ${APP_IMAGE:-fairway360:prod}
+    container_name: fairway360-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      DATABASE_URL: postgres://fairway:${DB_PASSWORD}@db:5432/fairway360
+      SESSION_SECRET: ${SESSION_SECRET}
+      APP_URL: https://${DOMAIN}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CONCIERGE_MODEL: ${CONCIERGE_MODEL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY:-}
+      FIREBASE_WEB_API_KEY: ${FIREBASE_WEB_API_KEY:-}
+      FIREBASE_WEB_APP_ID: ${FIREBASE_WEB_APP_ID:-}
+      FIREBASE_MESSAGING_SENDER_ID: ${FIREBASE_MESSAGING_SENDER_ID:-}
+      FIREBASE_VAPID_KEY: ${FIREBASE_VAPID_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      SALES_NOTIFY_EMAIL: ${SALES_NOTIFY_EMAIL:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM: ${TWILIO_FROM:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    expose:
+      - "5000"
+
+  backup:
+    image: postgres:16
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "backup service started";
+        while true; do
+          ts=$$(date +%Y%m%d_%H%M%S);
+          if pg_dump -h db -U fairway -d fairway360 > /backups/fairway360_$$ts.sql; then
+            echo "backup written: $$ts";
+          else
+            echo "backup FAILED: $$ts"; rm -f /backups/fairway360_$$ts.sql;
+          fi;
+          ls -1t /backups/*.sql 2>/dev/null | tail -n +8 | xargs -r rm -f;
+          sleep 86400;
+        done
+
+volumes:
+  pgdata:
+
+networks:
+  default:
+    name: fairway360net
