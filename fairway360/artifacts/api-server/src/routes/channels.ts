@@ -12,7 +12,26 @@ import { detectEscalation, holdingMessage, type EscalationResult } from "../lib/
 import { isAnyStaffAvailable } from "../lib/presence";
 import { isDelegated } from "../lib/delegation";
 import { allowAgentReply } from "../lib/ai-throttle";
+import { sendToUsers, pushEnabled } from "../lib/push";
 import { logger } from "../lib/logger";
+
+// Push supervisors when an escalation is raised (best-effort, env-gated).
+async function notifySupervisors(clubId: string, memberName: string, level: number, channelName: string): Promise<void> {
+  if (!pushEnabled()) return;
+  try {
+    const sups = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.clubId, clubId), eq(users.role, "supervisor")));
+    await sendToUsers(clubId, sups.map((s) => s.id), {
+      title: `Level ${level} escalation`,
+      body: `${memberName} in ${channelName} needs attention`,
+      link: "/portal/supervisor",
+    });
+  } catch (err) {
+    logger.debug({ err }, "escalation: supervisor push failed");
+  }
+}
 
 const router: IRouter = Router();
 
@@ -186,6 +205,8 @@ async function recordEscalation(
       agentLastMessage,
       status: "open",
     });
+    // Best-effort push to supervisors (env-gated; no-ops without Firebase).
+    void notifySupervisors(clubId, memberName, esc.level, ch.name);
   } catch (err) {
     logger.error({ err }, "escalation: failed to record");
   }

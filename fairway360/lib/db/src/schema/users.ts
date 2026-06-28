@@ -110,3 +110,18 @@ export const insertStaffProfileSchema = createInsertSchema(staffProfiles).omit({
 });
 export type InsertStaffProfile = z.infer<typeof insertStaffProfileSchema>;
 export type StaffProfile = typeof staffProfiles.$inferSelect;
+
+/** Web/mobile push registration tokens (Firebase Cloud Messaging). */
+export const deviceTokens = pgTable("device_tokens", {
+  id: pk(),
+  clubId: uuid("club_id")
+    .notNull()
+    .references(() => clubs.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  token: text("token").notNull().unique(),
+  platform: text("platform").notNull().default("web"),
+  ...timestamps,
+});
+export type DeviceToken = typeof deviceTokens.$inferSelect;

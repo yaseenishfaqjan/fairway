@@ -9,6 +9,7 @@ import supervisorRouter from "./supervisor";
 import agentRouter from "./agent";
 import channelsRouter from "./channels";
 import realtimeRouter from "./realtime";
+import pushRouter from "./push";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(supervisorRouter);
 router.use(agentRouter);
 router.use(channelsRouter);
 router.use(realtimeRouter);
+router.use(pushRouter);
 
 export default router;
