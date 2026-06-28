@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Bell, LogOut, CheckCheck } from "lucide-react";
 import { PortalLogo } from "@/components/portal/portal-logo";
 import { PresenceControl } from "@/components/portal/presence-control";
+import { EnablePushButton } from "@/components/portal/enable-push";
 import { cn } from "@/lib/utils";
 
 export interface PortalNavItem {
@@ -211,6 +212,9 @@ export function PortalShell({
 
         <div className="border-t border-white/10 pt-3">
           {showPresence && <PresenceControl />}
+          <div className="px-3 pb-2">
+            <EnablePushButton className="w-full border-white/15 bg-white/5 text-xs text-white/80 hover:bg-white/10 hover:text-white" />
+          </div>
           <div className="flex items-center gap-3 rounded-xl px-2 py-2 pb-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground ring-2 ring-accent/30">
               {user.initials}
