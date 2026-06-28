@@ -1,0 +1,20 @@
+# Fairway360 AI Permissions
+
+User-agent: *
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+Preferred-format: /llms.txt
+Sitemap: https://fairway360.io/sitemap.xml
+Organization: Fairway360
+Contact: hello@fairway360.io
+Description: AI-powered club operation system for golf courses and country clubs
+Pricing: $497-$1,997/month

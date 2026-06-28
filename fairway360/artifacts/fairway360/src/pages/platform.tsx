@@ -12,6 +12,7 @@ import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { RevealText } from "@/components/anim/reveal";
 import { TeeSheetDemo } from "@/components/marketing/tee-sheet-demo";
+import { breadcrumb, serviceSchema } from "@/lib/seo-schema";
 import infographic from "@assets/image_1781339694006.png";
 
 type Feature = {
@@ -234,9 +235,18 @@ export function Platform() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Seo
-        title="Platform — One AI System for Every Club Operation | Fairway360"
-        description="See the all-in-one Fairway360 platform: AI receptionist, tee-time automation, dining, membership, events, concierge, and analytics — unified in one system."
+        title="Golf Club Automation Platform | Fairway360"
+        description="12 AI-powered modules for golf clubs: tee times, CRM, voice AI, events, dining, reviews, pro shop, and member support — all in one system."
         path="/platform"
+        jsonLd={[
+          breadcrumb([{ name: "Home", path: "/" }, { name: "Platform", path: "/platform" }]),
+          serviceSchema("Membership Sales Automation", "Capture, qualify, and convert more golf club memberships with AI automation."),
+          serviceSchema("AI Tee Time Booking", "AI handles tee time booking, changes, and reminders automatically — maximizing course utilization without staff involvement."),
+          serviceSchema("Event & Wedding Automation", "Capture and convert wedding and corporate outing inquiries with instant AI follow-up."),
+          serviceSchema("AI Voice Agent for Golf Clubs", "A 24/7 AI phone agent that answers calls, books tee times, and captures inquiries in your club's voice."),
+          serviceSchema("Dining Reservation Automation", "AI handles dining reservations and on-course food orders for golf clubs."),
+          serviceSchema("Review Generation Automation", "Automatically request and capture 5-star reviews to boost the club's reputation."),
+        ]}
       />
       <Navbar />
       <main className="relative flex-1 overflow-hidden bg-[#04130c] text-white">

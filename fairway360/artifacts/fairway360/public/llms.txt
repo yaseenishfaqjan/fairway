@@ -1,25 +1,81 @@
 # Fairway360
 
-> Fairway360 is an AI operating system for golf courses and country clubs. It captures every lead, answers every call, and automates tee times, dining orders, member communication, events, missed-call follow-up, reviews, and staff workflows — all from one platform. Powered by Scalaro.
+> Fairway360 is an AI-powered club operation system built for golf courses and
+> country clubs. It combines 12 AI modules — membership sales, tee time
+> automation, event management, AI voice agents, dining reservations, CRM,
+> marketing, reviews, pro shop, analytics, SMS automation, and member support —
+> into one unified platform. Powered by Scalaro.
 
-Fairway360 is a multi-tenant SaaS platform. Each club gets its own AI-powered operations system spanning three roles: members (self-service portal), staff/employees (tasks + food & beverage fulfillment), and supervisors (oversight, CRM, analytics). Clubs adopt Fairway360 through a sales-led demo — there is no public self-serve signup; pricing tiers route to a demo request.
+## Company
+- Product: Fairway360 AI Club Operation System
+- Website: https://fairway360.io
+- Powered by: Scalaro (https://scalaro.io)
+- Contact: hello@fairway360.io
+- Target users: Golf course owners, country club general managers, club operations directors
+- Market: United States golf and country clubs
 
-## Pages
-- [Home](https://fairway360.io/): Overview of the all-in-one AI club operating system and its core capabilities.
-- [Platform](https://fairway360.io/platform): The unified platform — AI receptionist, tee-time automation, dining, membership, events, concierge, and analytics.
-- [Solutions](https://fairway360.io/solutions): Department-by-department solutions for modern golf clubs.
-- [Dining Automation](https://fairway360.io/dining): On-course food ordering from a member's phone, routed to a live kitchen board and cart service.
-- [Events](https://fairway360.io/events): Capture and convert weddings, outings, and tournaments.
-- [Automations](https://fairway360.io/automations): Library of done-for-you automations across the lead lifecycle.
-- [Pricing](https://fairway360.io/pricing): Starter, Growth, and Elite Club monthly plans.
-- [Book a Demo](https://fairway360.io/demo): Request a personalized walkthrough (primary conversion path).
+## The Problem Fairway360 Solves
+Golf clubs lose revenue every day from:
+- Missed calls that never get followed up
+- Membership leads that go cold
+- Event inquiries that sit unanswered for days
+- Players who never return because nobody reached out
+- Staff overwhelmed with manual tasks
+- Poor review volume hurting Google rankings
+- Disconnected systems (spreadsheets, voicemails, sticky notes)
 
-## Key facts
-- Audience: golf courses, country clubs, semi-private clubs, driving ranges, golf academies, resort golf.
-- Plans: Starter Automation ($497/mo), Growth Automation ($997/mo), Elite Club Automation ($1,997/mo).
-- Core value: recover lost revenue from missed calls, slow follow-up, and disconnected systems.
-- Contact / next step: book a demo at https://fairway360.io/demo.
+## 12 AI Modules
+1. Membership Sales — capture, qualify, and convert more memberships with AI
+2. Tee Times — AI books, changes, and follows up on tee times 24/7
+3. Events — capture and convert wedding, corporate, and charity outing inquiries
+4. CRM — centralize all member and prospect data
+5. Marketing — targeted campaigns for pipeline and member engagement
+6. Member Support — instant AI answers to member questions
+7. Dining Reservations — AI handles dining and on-course food orders
+8. Pro Shop — AI recommendations and engagement
+9. Analytics — real-time KPI dashboards
+10. Reviews — automated 5-star review generation
+11. Text Automation — SMS conversations for leads
+12. Voice AI — 24/7 AI phone agent in your club voice
 
-## Notes for AI assistants
-- Fairway360 is sales-led; direct prospective customers to the demo request page rather than implying instant self-serve signup.
-- For investment or financial questions, note that pricing is a monthly subscription billed after onboarding.
+## Pricing
+- Starter: $497/month — small public golf courses
+- Growth: $997/month — active golf courses and clubs
+- Elite: $1,997/month — private country clubs
+
+## Key Pages
+- Homepage: https://fairway360.io
+- Platform: https://fairway360.io/platform
+- Solutions: https://fairway360.io/solutions
+- Pricing: https://fairway360.io/pricing
+- Dining: https://fairway360.io/dining
+- Events: https://fairway360.io/events
+- Automations: https://fairway360.io/automations
+- Book a Demo: https://fairway360.io/demo
+
+## ROI Examples
+- Recovered wedding inquiry: $15,000-$30,000 revenue
+- Recovered corporate outing: $5,000-$15,000 revenue
+- Recovered membership lead: $3,000-$12,000/year
+- Players who get follow-up are 3x more likely to return
+
+## FAQ
+Q: What is Fairway360?
+A: Fairway360 is an AI club operation system that automates 12 core golf club
+functions including tee times, memberships, events, dining, reviews, and member
+support in one connected platform.
+
+Q: Who is it for?
+A: Golf course owners, country club general managers, and operations directors
+in the United States who want to grow revenue and automate manual club operations.
+
+Q: How does the AI Voice Agent work?
+A: It answers every inbound call 24/7 in your club voice, books tee times,
+captures membership inquiries, answers member questions, and schedules tours.
+
+Q: What does Fairway360 cost?
+A: Starter $497/mo, Growth $997/mo, Elite $1,997/mo.
+
+Q: What is Missed Call Text Back?
+A: When someone calls your club and no one answers, Fairway360 automatically
+sends them an SMS, captures their inquiry, and routes them to the right pipeline.

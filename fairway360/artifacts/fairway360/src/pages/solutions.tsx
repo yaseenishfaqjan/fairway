@@ -27,6 +27,7 @@ import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { RevealText } from "@/components/anim/reveal";
+import { breadcrumb } from "@/lib/seo-schema";
 
 type Solution = {
   icon: LucideIcon;
@@ -137,9 +138,10 @@ export function Solutions() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Seo
-        title="Solutions — One AI System, Every Department | Fairway360"
-        description="From AI receptionist to dining, membership, events, pro shop, and analytics — explore every Fairway360 solution built for modern golf courses and clubs."
+        title="AI Solutions for Golf Clubs | Fairway360"
+        description="Explore every Fairway360 solution for golf courses and country clubs: receptionist, dining, membership, events, pro shop, reviews, and analytics."
         path="/solutions"
+        jsonLd={[breadcrumb([{ name: "Home", path: "/" }, { name: "Solutions", path: "/solutions" }])]}
       />
       <Navbar />
       <main className="flex-1 bg-[#04130c] text-white">
@@ -167,7 +169,7 @@ function SolutionsHero() {
             transition={{ duration: 0.5 }}
             className="mb-4 text-5xl font-semibold tracking-tight md:text-6xl lg:text-7xl"
           >
-            Solutions
+            AI Solutions for Golf Clubs
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}

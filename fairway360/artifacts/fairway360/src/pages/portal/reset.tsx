@@ -6,11 +6,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PortalLogo } from "@/components/portal/portal-logo";
+import { Seo } from "@/components/seo";
 import { useToast } from "@/hooks/use-toast";
 
 function Shell({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[hsl(146_46%_12%)] px-4">
+      <Seo title={`${title} | Fairway360`} description="Fairway360 account access." path="/portal/reset" noindex />
       <Card className="w-full max-w-md border-white/10 bg-white/[0.04] p-8 text-white backdrop-blur-xl">
         <div className="mb-6 flex justify-center"><PortalLogo /></div>
         <h1 className="mb-1 text-center font-display text-xl font-semibold">{title}</h1>

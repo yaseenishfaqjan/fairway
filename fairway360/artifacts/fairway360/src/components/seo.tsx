@@ -13,6 +13,10 @@ interface SeoProps {
   path: string;
   /** Optional JSON-LD structured data (object or array of objects). */
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  /** Set true on gated/private pages (login, portals) to keep them out of search. */
+  noindex?: boolean;
+  /** OG/Twitter image (absolute or root-relative). Defaults to /opengraph.jpg. */
+  image?: string;
 }
 
 function upsertMeta(attr: "name" | "property", key: string, content: string) {
@@ -42,17 +46,26 @@ function upsertLink(rel: string, href: string) {
  * canonical, Open Graph + Twitter tags, and optional JSON-LD on mount. The base
  * tags live in index.html as crawl-safe defaults; this overrides them per page.
  */
-export function Seo({ title, description, path, jsonLd }: SeoProps) {
+export function Seo({ title, description, path, jsonLd, noindex, image }: SeoProps) {
   useEffect(() => {
     const url = `${SITE_URL}${path === "/" ? "" : path}`;
+    const img = image
+      ? image.startsWith("http") ? image : `${SITE_URL}${image}`
+      : `${SITE_URL}/opengraph.jpg`;
     document.title = title;
     upsertMeta("name", "description", description);
+    upsertMeta("name", "robots", noindex ? "noindex, nofollow" : "index, follow");
     upsertLink("canonical", url);
     upsertMeta("property", "og:title", title);
     upsertMeta("property", "og:description", description);
     upsertMeta("property", "og:url", url);
+    upsertMeta("property", "og:type", "website");
+    upsertMeta("property", "og:site_name", "Fairway360");
+    upsertMeta("property", "og:image", img);
+    upsertMeta("name", "twitter:card", "summary_large_image");
     upsertMeta("name", "twitter:title", title);
     upsertMeta("name", "twitter:description", description);
+    upsertMeta("name", "twitter:image", img);
 
     let script: HTMLScriptElement | null = null;
     if (jsonLd) {

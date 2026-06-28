@@ -24,6 +24,7 @@ import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { RevealText } from "@/components/anim/reveal";
+import { breadcrumb } from "@/lib/seo-schema";
 import liveKitchenImg from "@assets/image_1782003578564.jpg";
 import burgerImg from "@assets/generated_images/menu_f2.jpg";
 import wrapImg from "@assets/generated_images/menu_f3.jpg";
@@ -34,9 +35,10 @@ export function Dining() {
   return (
     <div className="flex min-h-screen flex-col bg-background overflow-hidden">
       <Seo
-        title="Dining Automation — Order Food On the Course | Fairway360"
-        description="Let members order food and drinks from their phone while they play. Orders flow to a live kitchen board and cart service — more F&B revenue, less wait."
+        title="Golf Club Dining Automation | Fairway360"
+        description="AI handles dining reservations and on-course food orders for golf clubs. More revenue, less staff workload."
         path="/dining"
+        jsonLd={[breadcrumb([{ name: "Home", path: "/" }, { name: "Dining", path: "/dining" }])]}
       />
       <Navbar />
       <main className="flex-1">

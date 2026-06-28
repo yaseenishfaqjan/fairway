@@ -9,46 +9,27 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { BrandLogo } from "@/components/brand-logo";
-import { Seo, SITE_URL } from "@/components/seo";
+import { Seo } from "@/components/seo";
 import { Reveal, RevealText } from "@/components/anim/reveal";
 import { CountUp } from "@/components/anim/count-up";
 import { Magnetic } from "@/components/anim/magnetic";
 import { MeshHero } from "@/components/marketing/mesh-hero";
 import { MarqueeStrip, LiveActivityFeed, AICyclingPanel, PortalMiniScreens } from "@/components/marketing/showcase";
+import { ORGANIZATION_SCHEMA, SOFTWARE_SCHEMA, WEBSITE_SCHEMA, HOME_FAQ_SCHEMA } from "@/lib/seo-schema";
 
 const HOME_JSONLD: Record<string, unknown>[] = [
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Fairway360",
-    url: SITE_URL,
-    logo: `${SITE_URL}/favicon.png`,
-    description:
-      "AI operating system for golf courses and country clubs. Powered by Scalaro.",
-    sameAs: [] as string[],
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "Fairway360",
-    applicationCategory: "BusinessApplication",
-    operatingSystem: "Web",
-    description:
-      "Run your entire club from one AI system — tee times, dining, member communication, events, missed calls, reviews, and staff workflows.",
-    offers: {
-      "@type": "Offer",
-      price: "497",
-      priceCurrency: "USD",
-    },
-  },
+  ORGANIZATION_SCHEMA,
+  SOFTWARE_SCHEMA,
+  WEBSITE_SCHEMA,
+  HOME_FAQ_SCHEMA,
 ];
 
 export function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-hidden">
       <Seo
-        title="Fairway360 — AI Operating System for Golf Courses & Country Clubs"
-        description="Run your entire club from one AI system. Fairway360 automates tee times, dining orders, member communication, events, missed calls, and reviews — 24/7."
+        title="AI Golf Club Management Software | Fairway360"
+        description="Fairway360 automates tee times, memberships, events, dining, reviews, and staff workflows for golf courses and country clubs. Book a demo today."
         path="/"
         jsonLd={HOME_JSONLD}
       />

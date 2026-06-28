@@ -1,8 +1,32 @@
+# Fairway360 — robots.txt
 User-agent: *
 Allow: /
-
-# Authenticated app areas — no SEO value, keep out of the index.
 Disallow: /portal
-Disallow: /api
+Disallow: /api/
+
+# AI crawlers — allow public pages, keep the gated portal out
+User-agent: GPTBot
+Allow: /
+Disallow: /portal
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /portal
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: bingbot
+Allow: /
 
 Sitemap: https://fairway360.io/sitemap.xml
+LLMs: https://fairway360.io/llms.txt

@@ -9,6 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Seo } from "@/components/seo";
 import { PortalLogo } from "@/components/portal/portal-logo";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -74,6 +75,7 @@ export function PortalLogin() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[hsl(146_46%_17%)] px-4 py-16 text-white">
+      <Seo title="Log In | Fairway360" description="Log in to your Fairway360 golf club management dashboard." path="/portal" noindex />
       <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_top,_white,_transparent_60%)] pointer-events-none" />
       <div className="relative z-10 w-full max-w-5xl">
         <div className="text-center mb-10">

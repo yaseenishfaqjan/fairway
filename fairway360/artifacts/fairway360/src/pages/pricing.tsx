@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RevealText } from "@/components/anim/reveal";
+import { breadcrumb, HOME_FAQ_SCHEMA } from "@/lib/seo-schema";
 
 export function Pricing() {
   const tiers = [
@@ -64,9 +65,10 @@ export function Pricing() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Seo
-        title="Pricing — Simple Plans for Every Club | Fairway360"
-        description="Transparent monthly plans for golf courses and country clubs: Starter, Growth, and Elite Club automation. No hidden fees — book a demo to get started."
+        title="Golf Club Software Pricing | Fairway360"
+        description="Simple pricing for golf clubs: Starter $497/mo, Growth $997/mo, Elite $1,997/mo. No long-term contracts."
         path="/pricing"
+        jsonLd={[breadcrumb([{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }]), HOME_FAQ_SCHEMA]}
       />
       <Navbar />
       <main className="flex-1">

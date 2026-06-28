@@ -13,6 +13,7 @@ import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { RevealText } from "@/components/anim/reveal";
+import { breadcrumb } from "@/lib/seo-schema";
 
 const automations = [
   {
@@ -260,9 +261,10 @@ export function Automations() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Seo
-        title="Automations — Automate More, Achieve More | Fairway360"
-        description="Capture, qualify, nurture, and convert every lead automatically. Explore Fairway360's library of done-for-you automations for golf courses and clubs."
+        title="Golf Club Workflow Automations | Fairway360"
+        description="Automate missed calls, membership follow-up, tee time booking, review requests, and staff tasks for golf clubs."
         path="/automations"
+        jsonLd={[breadcrumb([{ name: "Home", path: "/" }, { name: "Automations", path: "/automations" }])]}
       />
       <Navbar />
       <main className="flex-1 bg-[#04130c] text-white">

@@ -27,6 +27,7 @@ import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { RevealText } from "@/components/anim/reveal";
+import { breadcrumb } from "@/lib/seo-schema";
 
 type EventType = {
   icon: LucideIcon;
@@ -137,9 +138,10 @@ export function Events() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Seo
-        title="Events — Every Event, Effortlessly Managed | Fairway360"
-        description="Capture and convert more weddings, outings, and tournaments. Fairway360 automates event inquiries, follow-up, and operations for golf clubs."
+        title="Golf Club Event Automation | Fairway360"
+        description="Capture, follow up, and convert more weddings, corporate outings, and club events with AI automation."
         path="/events"
+        jsonLd={[breadcrumb([{ name: "Home", path: "/" }, { name: "Events", path: "/events" }])]}
       />
       <Navbar />
       <main className="flex-1 bg-[#04130c] text-white">
@@ -167,7 +169,7 @@ function EventsHero() {
             transition={{ duration: 0.5 }}
             className="mb-4 text-5xl font-semibold tracking-tight md:text-6xl lg:text-7xl"
           >
-            Events
+            Golf Club Event Management
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}

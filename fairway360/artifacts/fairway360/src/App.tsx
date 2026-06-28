@@ -21,6 +21,7 @@ import { PrivacyPolicy, TermsOfService } from "@/pages/legal";
 import { PortalLogin } from "@/pages/portal/login";
 import { ForgotPassword, ResetPassword } from "@/pages/portal/reset";
 import { CursorSpotlight, ScrollProgress } from "@/components/anim/ambient";
+import { Analytics } from "@/components/analytics";
 import { installClientMonitoring } from "@/lib/client-monitoring";
 
 if (import.meta.env.PROD) installClientMonitoring();
@@ -100,6 +101,7 @@ function App() {
           <TooltipProvider>
             <OrdersProvider>
               <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Analytics />
                 <MarketingChrome />
                 <Router />
               </WouterRouter>

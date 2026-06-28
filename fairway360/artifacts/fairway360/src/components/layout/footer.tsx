@@ -13,6 +13,11 @@ export function Footer() {
             <p className="mt-4 max-w-xs text-sm text-muted-foreground">
               Powered by Scalaro. The AI Operating System for Golf Courses & Country Clubs.
             </p>
+            <address className="mt-4 text-sm not-italic text-muted-foreground">
+              Fairway360<br />
+              Powered by Scalaro<br />
+              <a href="mailto:hello@fairway360.io" className="hover:text-primary" data-testid="link-footer-email">hello@fairway360.io</a>
+            </address>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">Platform</h3>
