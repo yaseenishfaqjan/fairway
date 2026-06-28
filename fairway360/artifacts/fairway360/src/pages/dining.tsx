@@ -662,7 +662,7 @@ function FinalCTA() {
         </p>
         <div className="flex flex-col justify-center gap-4 sm:flex-row">
           <Button asChild size="lg" className="h-14 bg-accent px-8 text-base text-accent-foreground hover:bg-accent/90">
-            <Link href="/demo">Book a Demo</Link>
+            <Link href="/demo?problem=dining&topic=Dining%20%26%20F%26B">Book a Demo</Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="h-14 border-white/20 bg-white/5 px-8 text-base text-white hover:bg-white/10">
             <Link href="/pricing">See Pricing</Link>

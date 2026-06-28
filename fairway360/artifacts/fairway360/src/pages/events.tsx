@@ -242,7 +242,7 @@ function EventsGrid() {
           {eventTypes.map((evt) => (
             <motion.div key={evt.title} variants={fadeUp}>
               <Link
-                href={evt.href}
+                href={evt.href === "/demo" ? `/demo?problem=events&topic=${encodeURIComponent(evt.title)}` : evt.href}
                 className="fw-glow group flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors hover:border-[hsl(145_58%_45%)]/40"
                 data-testid={`card-event-${evt.title.toLowerCase().replace(/[^a-z]+/g, "-")}`}
               >
@@ -286,7 +286,7 @@ function EventsGrid() {
                 ))}
               </ul>
               <Button asChild className="mt-auto bg-accent text-accent-foreground hover:bg-accent/90">
-                <Link href="/demo" data-testid="button-events-all-demo">Request Demo</Link>
+                <Link href="/demo?problem=events&topic=Events" data-testid="button-events-all-demo">Request Demo</Link>
               </Button>
             </div>
           </motion.div>
@@ -335,7 +335,7 @@ function TransformCTA() {
           </div>
           <div className="mt-8 flex justify-center border-t border-white/10 pt-8">
             <Button asChild size="lg" className="h-14 bg-accent px-10 text-base text-accent-foreground hover:bg-accent/90">
-              <Link href="/demo" data-testid="button-events-transform-demo">
+              <Link href="/demo?problem=events&topic=Events" data-testid="button-events-transform-demo">
                 Request Your Personalized Demo <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>

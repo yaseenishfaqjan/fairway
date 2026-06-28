@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearch } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -29,6 +30,16 @@ export function Demo() {
   const [submitted, setSubmitted] = useState(false);
   const createDemoRequest = useCreateDemoRequest();
 
+  // Contextual entry: a CTA can pre-scope the request, e.g. /demo?problem=events&topic=Banquets+%26+Galas
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const VALID_PROBLEMS = new Set([
+    "missed-calls", "slow-followup", "events", "membership", "staff", "reviews", "dining", "tee-sheet", "other",
+  ]);
+  const problemParam = params.get("problem") ?? "";
+  const presetProblem = VALID_PROBLEMS.has(problemParam) ? problemParam : "";
+  const topic = (params.get("topic") ?? "").slice(0, 60);
+
   const form = useForm<z.infer<typeof demoSchema>>({
     resolver: zodResolver(demoSchema),
     defaultValues: {
@@ -37,7 +48,7 @@ export function Demo() {
       phoneNumber: "",
       email: "",
       businessType: "",
-      problem: "",
+      problem: presetProblem,
       volume: "",
     },
   });
@@ -81,6 +92,11 @@ export function Demo() {
           <p className="text-xl text-muted-foreground">
             Get a personalized walkthrough of Fairway360 and see exactly how it can recover lost revenue for your club.
           </p>
+          {topic && (
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-sm font-medium text-[hsl(38_55%_40%)]">
+              Tailored to: {topic}
+            </p>
+          )}
         </div>
 
         {submitted ? (
@@ -200,6 +216,8 @@ export function Demo() {
                             <SelectItem value="missed-calls">Missed Calls</SelectItem>
                             <SelectItem value="slow-followup">Slow Lead Follow-Up</SelectItem>
                             <SelectItem value="events">Event Lead Management</SelectItem>
+                            <SelectItem value="dining">Dining / F&amp;B Ordering</SelectItem>
+                            <SelectItem value="tee-sheet">Tee Sheet / Bookings</SelectItem>
                             <SelectItem value="membership">Membership Conversion</SelectItem>
                             <SelectItem value="staff">Staff Overwhelm</SelectItem>
                             <SelectItem value="reviews">Review Generation</SelectItem>

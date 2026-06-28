@@ -651,7 +651,7 @@ function BottomCTA() {
           team just watches the leads come in.
         </p>
         <Button asChild size="lg" className="h-14 bg-accent px-10 text-base text-accent-foreground hover:bg-accent/90">
-          <Link href="/demo" data-testid="button-automations-bottom-cta">
+          <Link href="/demo?topic=Automations" data-testid="button-automations-bottom-cta">
             Request Your Demo <ChevronRight className="ml-2 h-5 w-5" />
           </Link>
         </Button>
