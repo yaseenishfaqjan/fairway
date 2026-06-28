@@ -11,6 +11,10 @@ WORKDIR /app
 COPY . .
 RUN pnpm install --no-frozen-lockfile
 
+# Optional build-time analytics id baked into the SPA (Vite needs it at build).
+ARG VITE_GA_ID=""
+ENV VITE_GA_ID=$VITE_GA_ID
+
 # Build: shared libs (project references) -> API bundle (esbuild) -> SPA (vite).
 # Use pnpm filters so each package's local bin (vite, esbuild) resolves correctly.
 RUN node node_modules/typescript/bin/tsc --build \

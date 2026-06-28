@@ -27,6 +27,8 @@ services:
   app:
     build:
       context: ./fairway360
+      args:
+        VITE_GA_ID: ${VITE_GA_ID:-}
     restart: unless-stopped
     depends_on:
       db:
