@@ -4,6 +4,44 @@ This deploys the whole app as three Docker containers — **app** (API + built S
 
 ---
 
+## Option B (recommended for low-disk VPS): pull a pre-built image
+
+Instead of cloning the repo and building on the server, build the image once on
+your workstation, push it to a registry, and just **pull** it on the VPS. Nothing
+is compiled on the server.
+
+**On your workstation**
+```bash
+docker build -t <user>/fairway360:latest ./fairway360
+docker login
+docker push <user>/fairway360:latest          # use a PRIVATE repo — the image contains source
+```
+
+**Copy only three files to the VPS** (no repo needed):
+```bash
+ssh root@YOUR_VPS_IP "mkdir -p /root/fairway360"
+scp docker-compose.prod.yml Caddyfile .env root@YOUR_VPS_IP:/root/fairway360/
+```
+Set `APP_IMAGE=<user>/fairway360:latest` in that `.env`.
+
+**On the VPS**
+```bash
+cd /root/fairway360
+docker ps --format '{{.Names}} {{.Ports}}' | grep -E ':80->|:443->' || echo "ports 80/443 free"
+docker login                                   # so it can pull the private image
+docker pull "$(grep ^APP_IMAGE= .env | cut -d= -f2)"
+docker compose -f docker-compose.prod.yml up -d --no-build
+docker compose -f docker-compose.prod.yml exec app pnpm --filter @workspace/db push
+docker compose -f docker-compose.prod.yml exec app pnpm --filter @workspace/scripts seed
+```
+To ship an update later: rebuild + push the image on your workstation, then on the
+VPS `docker pull … && docker compose -f docker-compose.prod.yml up -d --no-build`.
+
+---
+
+## Option A: build on the server (original)
+
+
 ## 0. What you need first
 
 - A **VPS** running Ubuntu 22.04+ (2 GB RAM minimum, 4 GB recommended for the build).

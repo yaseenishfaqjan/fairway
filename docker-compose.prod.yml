@@ -25,6 +25,7 @@ services:
       retries: 5
 
   app:
+    image: ${APP_IMAGE:-fairway360:prod}
     build:
       context: ./fairway360
       args:
