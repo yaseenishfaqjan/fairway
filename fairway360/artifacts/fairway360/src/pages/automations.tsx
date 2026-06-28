@@ -12,6 +12,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
+import { RevealText } from "@/components/anim/reveal";
 
 const automations = [
   {
@@ -533,9 +534,9 @@ function AutomationLibrary() {
       <div className="container mx-auto max-w-5xl">
         <div className="mb-10 text-center">
           <p className="eyebrow mb-4 text-[hsl(145_58%_55%)]">Full Automation Library</p>
-          <h2 className="text-3xl font-semibold md:text-4xl lg:text-5xl">
+          <RevealText as="h2" className="text-3xl font-semibold md:text-4xl lg:text-5xl">
             Every Automation Your Club Needs
-          </h2>
+          </RevealText>
           <p className="mx-auto mt-4 max-w-2xl text-white/60">
             {automations.length} pre-built automations covering every department.
             Click any automation to see the full step-by-step flow.
@@ -562,7 +563,7 @@ function AutomationCard({ auto, index }: { auto: typeof automations[0]; index: n
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.03, duration: 0.4 }}
-      className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-colors hover:border-[hsl(145_58%_45%)]/40"
+      className="fw-glow overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] transition-colors hover:border-[hsl(145_58%_45%)]/40"
     >
       <button
         className="flex w-full items-start gap-4 p-5 text-left md:p-6"
@@ -642,9 +643,9 @@ function BottomCTA() {
     <section className="px-4 py-20 text-center md:px-6 md:py-28">
       <div className="container mx-auto max-w-3xl">
         <p className="eyebrow mb-5 text-[hsl(145_58%_55%)]">Fully Managed</p>
-        <h2 className="mb-4 text-3xl font-semibold md:text-4xl lg:text-5xl">
+        <RevealText as="h2" className="mb-4 text-3xl font-semibold md:text-4xl lg:text-5xl">
           Every Automation. Fully Managed.
-        </h2>
+        </RevealText>
         <p className="mb-10 text-lg text-white/70">
           Fairway360 sets up, tests, and monitors every automation for you. Your
           team just watches the leads come in.

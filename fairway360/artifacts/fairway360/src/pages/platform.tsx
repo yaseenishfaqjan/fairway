@@ -10,6 +10,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
+import { RevealText } from "@/components/anim/reveal";
 import infographic from "@assets/image_1781339694006.png";
 
 type Feature = {
@@ -121,7 +122,7 @@ function RadialHub() {
           >
             <FeatureNode
               f={f}
-              className={`rounded-xl border border-white/10 bg-[#04130c]/90 px-4 py-3 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.9)] ${
+              className={`fw-glow rounded-xl border border-white/10 bg-[#04130c]/90 px-4 py-3 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.9)] ${
                 alignCenter ? "text-center [&_.flex]:justify-center" : alignRight ? "text-right [&_.flex]:flex-row-reverse" : "text-left"
               }`}
             />
@@ -304,7 +305,7 @@ export function Platform() {
         <section id="ecosystem" className="scroll-mt-24 px-4 py-16 md:px-6 md:py-20">
           <div className="mb-12 text-center">
             <p className="eyebrow mb-4 text-accent">One Platform · Every Operation</p>
-            <h2 className="text-3xl font-semibold md:text-4xl">Every operation, one connected system</h2>
+            <RevealText as="h2" className="text-3xl font-semibold md:text-4xl">Every operation, one connected system</RevealText>
             <p className="mx-auto mt-4 max-w-2xl text-white/65">
               Twelve AI-powered capabilities orbit a single intelligent core — working together to run
               your club around the clock.
@@ -339,7 +340,7 @@ export function Platform() {
           <div className="container mx-auto">
             <div className="mb-16 text-center">
               <p className="eyebrow mb-4 text-accent">See It In Action</p>
-              <h2 className="text-3xl font-semibold md:text-4xl">A working system, not a slide deck</h2>
+              <RevealText as="h2" className="text-3xl font-semibold md:text-4xl">A working system, not a slide deck</RevealText>
               <p className="mx-auto mt-4 max-w-2xl text-white/65">
                 Six AI-driven workflows that capture, qualify, and delight — from the first missed call
                 to a confirmed tee time.

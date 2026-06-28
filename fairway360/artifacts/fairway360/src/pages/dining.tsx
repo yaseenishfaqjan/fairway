@@ -23,6 +23,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
+import { RevealText } from "@/components/anim/reveal";
 import liveKitchenImg from "@assets/image_1782003578564.jpg";
 import burgerImg from "@assets/generated_images/menu_f2.jpg";
 import wrapImg from "@assets/generated_images/menu_f3.jpg";
@@ -304,9 +305,9 @@ function BenefitsSection() {
       <div className="container mx-auto">
         <div className="mb-14 text-center">
           <p className="eyebrow mb-5 text-[hsl(145_58%_55%)]">Why It Works</p>
-          <h2 className="text-3xl font-semibold md:text-4xl lg:text-5xl">
+          <RevealText as="h2" className="text-3xl font-semibold md:text-4xl lg:text-5xl">
             A Better Dining Experience for Everyone
-          </h2>
+          </RevealText>
         </div>
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {cards.map((c, i) => (
@@ -316,7 +317,7 @@ function BenefitsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.08 }}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center transition-colors hover:border-[hsl(145_58%_45%)]/40"
+              className="fw-glow rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center transition-colors hover:border-[hsl(145_58%_45%)]/40"
             >
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(145_58%_45%)]/15 text-[hsl(145_58%_55%)]">
                 <c.icon className="h-6 w-6" />
@@ -652,9 +653,9 @@ function FinalCTA() {
   return (
     <section className="bg-[hsl(146_46%_9%)] px-4 py-20 text-center text-white md:px-6 md:py-28">
       <div className="container mx-auto max-w-3xl">
-        <h2 className="mb-6 text-3xl font-semibold leading-tight md:text-4xl lg:text-5xl">
+        <RevealText as="h2" className="mb-6 text-3xl font-semibold leading-tight md:text-4xl lg:text-5xl">
           Turn Every Round Into a Dining Opportunity
-        </h2>
+        </RevealText>
         <p className="mb-10 text-lg text-white/70">
           See how Fairway360 dining automation drives revenue and delights your
           members.

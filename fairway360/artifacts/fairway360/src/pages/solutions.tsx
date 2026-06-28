@@ -26,6 +26,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
+import { RevealText } from "@/components/anim/reveal";
 
 type Solution = {
   icon: LucideIcon;
@@ -225,9 +226,9 @@ function SolutionsGrid() {
       <div className="container mx-auto">
         <div className="mb-12 flex items-center justify-center gap-4">
           <span className="hidden h-px max-w-[120px] flex-1 bg-gradient-to-r from-transparent to-accent/50 sm:block" />
-          <h2 className="text-center font-display text-2xl font-semibold md:text-3xl lg:text-4xl">
+          <RevealText as="h2" className="text-center font-display text-2xl font-semibold md:text-3xl lg:text-4xl">
             Complete Solutions for Modern Clubs
-          </h2>
+          </RevealText>
           <span className="hidden h-px max-w-[120px] flex-1 bg-gradient-to-l from-transparent to-accent/50 sm:block" />
         </div>
 
@@ -242,7 +243,7 @@ function SolutionsGrid() {
             <motion.div key={sol.title} variants={fadeUp}>
               <Link
                 href={sol.href}
-                className="group flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors hover:border-[hsl(145_58%_45%)]/40"
+                className="fw-glow group flex h-full flex-col rounded-2xl border border-white/10 bg-white/[0.03] p-6 transition-colors hover:border-[hsl(145_58%_45%)]/40"
                 data-testid={`card-solution-${sol.title.toLowerCase().replace(/[^a-z]+/g, "-")}`}
               >
                 <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(145_58%_45%)]/15 text-[hsl(145_58%_55%)]">
@@ -311,9 +312,9 @@ function TransformCTA() {
                 <Flag className="h-8 w-8" />
               </span>
               <div>
-                <h2 className="font-display text-2xl font-semibold md:text-3xl">
+                <RevealText as="h2" className="font-display text-2xl font-semibold md:text-3xl">
                   Ready to Transform Your Club?
-                </h2>
+                </RevealText>
                 <p className="mt-2 max-w-md text-sm text-white/60">
                   See how Fairway360 can help your club save time, create better
                   member experiences, and grow revenue.

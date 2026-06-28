@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { RevealText } from "@/components/anim/reveal";
 
 export function Pricing() {
   const tiers = [
@@ -72,9 +73,9 @@ export function Pricing() {
         <section className="py-20 md:py-32 px-4 md:px-6">
           <div className="container mx-auto text-center max-w-3xl mb-16">
             <p className="eyebrow text-[hsl(38_55%_40%)] mb-5">Membership Plans</p>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-foreground mb-6 leading-[1.05]">
+            <RevealText as="h1" className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-foreground mb-6 leading-[1.05]">
               Simple, Transparent Pricing
-            </h1>
+            </RevealText>
             <p className="text-xl text-muted-foreground">
               Choose the plan that fits your operation. No hidden fees.
             </p>
@@ -84,7 +85,7 @@ export function Pricing() {
             {tiers.map((tier, i) => (
               <Card
                 key={i}
-                className={`relative flex flex-col ${
+                className={`fw-glow relative flex flex-col ${
                   tier.highlighted
                     ? "border-accent shadow-lg md:-mt-8 md:mb-8"
                     : "border-border"
