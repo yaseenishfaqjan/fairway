@@ -37,7 +37,7 @@ function slotToISO(slot: string): string {
   d.setHours(h, m, 0, 0);
   return d.toISOString();
 }
-import clubhouseHero from "@assets/generated_images/portal_clubhouse_hero.png";
+import clubhouseHero from "@assets/generated_images/portal_clubhouse_hero.jpg";
 
 type SectionKey = "home" | "book" | "order" | "events" | "messages" | "account" | "concierge";
 
@@ -255,7 +255,7 @@ export function MembersPortal() {
 
                   {/* Photo */}
                   <div className="relative order-1 min-h-[220px] lg:order-2 lg:min-h-full">
-                    <img src={clubhouseHero} alt="Augusta Pines clubhouse at sunset" className="absolute inset-0 h-full w-full object-cover" />
+                    <img src={clubhouseHero} alt="Augusta Pines clubhouse at sunset" decoding="async" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#04130c] via-[#04130c]/40 to-transparent lg:bg-gradient-to-l lg:via-[#04130c]/20" />
                   </div>
                 </div>

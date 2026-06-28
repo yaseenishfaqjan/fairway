@@ -291,6 +291,8 @@ export function Platform() {
               <img
                 src={infographic}
                 alt="Fairway360 — the all-in-one AI platform ecosystem for golf clubs and country clubs"
+                loading="lazy"
+                decoding="async"
                 className="w-full"
                 data-testid="img-infographic"
               />

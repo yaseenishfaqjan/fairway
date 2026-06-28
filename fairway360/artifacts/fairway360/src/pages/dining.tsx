@@ -23,11 +23,11 @@ import { Navbar } from "@/components/layout/navbar";
 import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
-import liveKitchenImg from "@assets/image_1782003578564.png";
-import burgerImg from "@assets/generated_images/menu_f2.png";
-import wrapImg from "@assets/generated_images/menu_f3.png";
-import clubImg from "@assets/generated_images/menu_f1.png";
-import saladImg from "@assets/generated_images/menu_f4.png";
+import liveKitchenImg from "@assets/image_1782003578564.jpg";
+import burgerImg from "@assets/generated_images/menu_f2.jpg";
+import wrapImg from "@assets/generated_images/menu_f3.jpg";
+import clubImg from "@assets/generated_images/menu_f1.jpg";
+import saladImg from "@assets/generated_images/menu_f4.jpg";
 
 export function Dining() {
   return (
@@ -192,7 +192,7 @@ function OrderPhone() {
         <div className="space-y-2">
           {items.map((it) => (
             <div key={it.name} className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-1.5">
-              <img src={it.img} alt={it.name} className="h-9 w-9 rounded-md object-cover" />
+              <img src={it.img} alt={it.name} loading="lazy" decoding="async" className="h-9 w-9 rounded-md object-cover" />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-[10px] font-medium text-white">{it.name}</div>
                 <div className="text-[10px] text-[hsl(145_58%_55%)]">{it.price}</div>
@@ -610,6 +610,8 @@ function LiveKitchenImage() {
           <img
             src={liveKitchenImg}
             alt="Fairway360 Live Kitchen board displayed over the clubhouse kitchen line as staff prepare on-course orders"
+            loading="lazy"
+            decoding="async"
             className="w-full"
           />
         </div>

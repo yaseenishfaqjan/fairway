@@ -101,7 +101,7 @@ export function MemberOrder() {
                 return (
                   <div key={i.id} className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]" data-testid={`member-menu-${i.id}`}>
                     <div className="relative">
-                      <img src={i.image} alt={i.name} className="h-28 w-full object-cover" />
+                      <img src={i.image} alt={i.name} loading="lazy" decoding="async" className="h-28 w-full object-cover" />
                       {qty > 0 && (
                         <span className="absolute right-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-accent px-1.5 text-xs font-bold text-accent-foreground shadow">{qty}</span>
                       )}

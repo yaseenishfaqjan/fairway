@@ -31,7 +31,7 @@ import {
 } from "@/lib/portal-data";
 import { ChannelChat } from "@/components/portal/channel-chat";
 import { HandoffPanel } from "@/components/portal/handoff-panel";
-import clubhouseHero from "@assets/generated_images/portal_clubhouse_hero.png";
+import clubhouseHero from "@assets/generated_images/portal_clubhouse_hero.jpg";
 
 type SectionKey = "home" | "service" | "channels" | "tasks" | "schedule" | "timeoff" | "team";
 type Icon = ComponentType<{ className?: string }>;
@@ -296,7 +296,7 @@ export function EmployeesPortal() {
               {/* Welcome banner with photo + clock controls */}
               <Glass className="relative overflow-hidden p-0">
                 <div className="absolute inset-0">
-                  <img src={clubhouseHero} alt="Augusta Pines clubhouse at sunset" className="h-full w-full object-cover" />
+                  <img src={clubhouseHero} alt="Augusta Pines clubhouse at sunset" decoding="async" fetchPriority="high" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#04130c] via-[#04130c]/85 to-[#04130c]/40" />
                 </div>
                 <div className="relative flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">

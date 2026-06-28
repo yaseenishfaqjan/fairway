@@ -197,7 +197,7 @@ export function ServiceBoard({ members }: ServiceBoardProps) {
                   {menuItems.filter((i) => i.category === cat).map((i) => (
                     <button key={i.id} onClick={() => addItem(i.id)} className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card text-left transition-colors hover:border-primary/40" data-testid={`menu-${i.id}`}>
                       <div className="relative">
-                        <img src={i.image} alt="" className="h-20 w-full object-cover" />
+                        <img src={i.image} alt="" loading="lazy" decoding="async" className="h-20 w-full object-cover" />
                         {cart[i.id] ? (
                           <span className="absolute right-1.5 top-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[11px] font-bold text-primary-foreground shadow">{cart[i.id]}</span>
                         ) : (
