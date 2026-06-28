@@ -6,10 +6,7 @@
 
 import { and, asc, eq } from "drizzle-orm";
 import { db, menuItems } from "@workspace/db";
-import { logger } from "./logger";
-
-const MODEL = process.env["CONCIERGE_MODEL"] ?? "claude-sonnet-4-6";
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+import { llmEnabled, llmComplete } from "./llm";
 
 const DEPT_PROMPT: Record<string, string> = {
   kitchen:
@@ -47,10 +44,6 @@ export function channelAgentName(department: string | null | undefined): string 
   return AGENT_NAME[department ?? "general"] ?? "Club Assistant";
 }
 
-interface AnthropicResponse {
-  content?: { type: string; text?: string }[];
-}
-
 export async function channelAgentReply(opts: {
   clubId: string;
   department: string | null | undefined;
@@ -62,8 +55,7 @@ export async function channelAgentReply(opts: {
   const first = opts.memberName.split(" ")[0] || "there";
   const fallback = (DEPT_FALLBACK[dept] ?? DEPT_FALLBACK["general"]!)(first);
 
-  const apiKey = process.env["ANTHROPIC_API_KEY"];
-  if (!apiKey) return fallback;
+  if (!llmEnabled()) return fallback;
 
   let menuText = "";
   if (dept === "kitchen") {
@@ -88,34 +80,6 @@ export async function channelAgentReply(opts: {
     .join("\n");
   const userMsg = `Recent conversation:\n${convo || "(none)"}\n\n${opts.memberName} just said: "${opts.message}"\n\nReply as the ${AGENT_NAME[dept]}.`;
 
-  try {
-    const res = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 350,
-        system,
-        messages: [{ role: "user", content: userMsg }],
-      }),
-    });
-    if (!res.ok) {
-      logger.error({ status: res.status }, "channel-agent: anthropic error");
-      return fallback;
-    }
-    const data = (await res.json()) as AnthropicResponse;
-    const text = (data.content ?? [])
-      .filter((b) => b.type === "text" && b.text)
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
-    return text || fallback;
-  } catch (err) {
-    logger.error({ err }, "channel-agent: request failed");
-    return fallback;
-  }
+  const text = await llmComplete({ system, user: userMsg, maxTokens: 350 });
+  return text || fallback;
 }

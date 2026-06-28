@@ -16,6 +16,7 @@ import {
   menuItems,
 } from "@workspace/db";
 import { logger } from "./logger";
+import { llmEnabled, llmComplete } from "./llm";
 
 const num = (v: string | null | undefined): number => (v == null ? 0 : Number(v));
 
@@ -23,9 +24,6 @@ interface ConciergeAuth {
   userId: string;
   clubId: string;
 }
-
-const MODEL = process.env["CONCIERGE_MODEL"] ?? "claude-sonnet-4-6";
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 const SYSTEM_PROMPT = `You are the Fairway360 AI concierge for a golf & country club member.
 You help with tee times, on-course food & drink orders, club events, dining
@@ -188,16 +186,11 @@ function fallbackReply(message: string): string {
   return "I can help with tee times, on-course food orders, events, dining reservations, and your account. What would you like to do?";
 }
 
-interface AnthropicResponse {
-  content?: { type: string; text?: string }[];
-}
-
 export async function conciergeReply(
   auth: ConciergeAuth,
   message: string,
 ): Promise<string> {
-  const apiKey = process.env["ANTHROPIC_API_KEY"];
-  if (!apiKey) return fallbackReply(message);
+  if (!llmEnabled()) return fallbackReply(message);
 
   let context: string;
   try {
@@ -207,37 +200,10 @@ export async function conciergeReply(
     return fallbackReply(message);
   }
 
-  try {
-    const res = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 400,
-        system: `${SYSTEM_PROMPT}\n\n--- MEMBER CONTEXT ---\n${context}`,
-        messages: [{ role: "user", content: message }],
-      }),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      logger.error({ status: res.status, body }, "concierge: anthropic error");
-      return fallbackReply(message);
-    }
-
-    const data = (await res.json()) as AnthropicResponse;
-    const text = (data.content ?? [])
-      .filter((b) => b.type === "text" && b.text)
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
-    return text || fallbackReply(message);
-  } catch (err) {
-    logger.error({ err }, "concierge: anthropic request failed");
-    return fallbackReply(message);
-  }
+  const text = await llmComplete({
+    system: `${SYSTEM_PROMPT}\n\n--- MEMBER CONTEXT ---\n${context}`,
+    user: message,
+    maxTokens: 400,
+  });
+  return text || fallbackReply(message);
 }

@@ -43,6 +43,8 @@ services:
       # Optional integrations — leave blank to run with graceful fallbacks.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CONCIERGE_MODEL: ${CONCIERGE_MODEL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
       SENTRY_DSN: ${SENTRY_DSN:-}
       FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-}
       FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL:-}
