@@ -1,5 +1,8 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { installProcessHandlers } from "./lib/monitoring";
+
+installProcessHandlers();
 
 const rawPort = process.env["PORT"];
 

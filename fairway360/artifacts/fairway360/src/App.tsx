@@ -21,6 +21,9 @@ import { PrivacyPolicy, TermsOfService } from "@/pages/legal";
 import { PortalLogin } from "@/pages/portal/login";
 import { ForgotPassword, ResetPassword } from "@/pages/portal/reset";
 import { CursorSpotlight, ScrollProgress } from "@/components/anim/ambient";
+import { installClientMonitoring } from "@/lib/client-monitoring";
+
+if (import.meta.env.PROD) installClientMonitoring();
 import { SupervisorPortal } from "@/pages/portal/supervisor";
 import { EmployeesPortal } from "@/pages/portal/employees";
 import { MembersPortal } from "@/pages/portal/members";

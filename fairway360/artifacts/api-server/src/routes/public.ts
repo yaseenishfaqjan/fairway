@@ -5,8 +5,17 @@ import { CreateDemoRequestBody } from "@workspace/api-zod";
 import { asyncHandler } from "../lib/http";
 import { sendDemoConfirmation, notifySalesOfDemo } from "../lib/email";
 import { rateLimit } from "../lib/rate-limit";
+import { captureClientError } from "../lib/monitoring";
 
 const router: IRouter = Router();
+
+// Browser error reporter → forwards to Sentry (if configured). Fire-and-forget.
+const clientErrorLimiter = rateLimit({ windowMs: 60_000, max: 30, key: "client-error" });
+router.post("/monitoring/client-error", clientErrorLimiter, (req, res) => {
+  const { message, stack, url } = (req.body ?? {}) as { message?: string; stack?: string; url?: string };
+  captureClientError({ message, stack, url });
+  res.status(204).end();
+});
 
 // Demo / sales request from the marketing site. There is no session here, so it
 // can't be tenant-scoped from auth; we route it to the Augusta Pines demo tenant

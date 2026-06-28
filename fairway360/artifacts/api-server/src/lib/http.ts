@@ -1,5 +1,6 @@
 import type { ErrorRequestHandler, RequestHandler } from "express";
 import { ZodError } from "zod";
+import { captureException } from "./monitoring";
 
 /** Thrown anywhere in a route to produce a ProblemDetails JSON response. */
 export class HttpError extends Error {
@@ -49,5 +50,6 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   }
 
   req.log?.error({ err }, "Unhandled error");
+  captureException(err, { path: req.path, method: req.method });
   res.status(500).json({ title: "Internal server error", status: 500 });
 };

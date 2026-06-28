@@ -41,6 +41,7 @@ services:
       # Optional integrations — leave blank to run with graceful fallbacks.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CONCIERGE_MODEL: ${CONCIERGE_MODEL:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM: ${EMAIL_FROM:-}
       SALES_NOTIFY_EMAIL: ${SALES_NOTIFY_EMAIL:-}
