@@ -26,11 +26,14 @@ export function rateLimit(opts: {
   windowMs: number;
   max: number;
   key: string;
+  /** Optional identity selector (e.g. the authed user id). Falls back to IP. */
+  by?: (req: Parameters<RequestHandler>[0]) => string | undefined;
 }): RequestHandler {
   return (req, res, next) => {
     const now = Date.now();
     sweep(now);
-    const id = `${opts.key}:${req.ip ?? "unknown"}`;
+    const who = opts.by?.(req) ?? req.ip ?? "unknown";
+    const id = `${opts.key}:${who}`;
     const b = buckets.get(id);
 
     if (!b || now > b.resetAt) {

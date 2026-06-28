@@ -11,6 +11,7 @@ import { channelAgentReply, channelAgentName } from "../lib/channel-agent";
 import { detectEscalation, holdingMessage, type EscalationResult } from "../lib/escalation";
 import { isAnyStaffAvailable } from "../lib/presence";
 import { isDelegated } from "../lib/delegation";
+import { allowAgentReply } from "../lib/ai-throttle";
 import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
@@ -235,6 +236,12 @@ async function respondWithAgent(
   memberName: string,
   message: string,
 ): Promise<void> {
+  // Cost guard: skip the AI reply if the club has exceeded its window budget.
+  // The member's message is already saved; staff can still answer.
+  if (!allowAgentReply(clubId)) {
+    logger.warn({ clubId, channelId: ch.id }, "channel agent reply throttled");
+    return;
+  }
   try {
     const recent = await db
       .select()
