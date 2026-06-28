@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Fairway360",
+    "slug": "fairway360",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "fairway360",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#04130c"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "io.fairway360.app"
+    },
+    "android": {
+      "package": "io.fairway360.app"
+    },
+    "extra": {
+      "apiBaseUrl": "https://fairway360.io"
+    },
+    "plugins": ["expo-notifications"]
+  }
+}
