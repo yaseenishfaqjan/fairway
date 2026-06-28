@@ -13,6 +13,8 @@ import { Seo, SITE_URL } from "@/components/seo";
 import { Reveal, RevealText } from "@/components/anim/reveal";
 import { CountUp } from "@/components/anim/count-up";
 import { Magnetic } from "@/components/anim/magnetic";
+import { MeshHero } from "@/components/marketing/mesh-hero";
+import { MarqueeStrip, LiveActivityFeed, AICyclingPanel, PortalMiniScreens } from "@/components/marketing/showcase";
 
 const HOME_JSONLD: Record<string, unknown>[] = [
   {
@@ -53,11 +55,52 @@ export function Home() {
       <Navbar />
       <main className="flex-1">
         <HeroSection />
+        <section className="border-y border-white/10 bg-[#04130c] py-6">
+          <div className="container mx-auto px-4 md:px-6">
+            <MarqueeStrip
+              items={[
+                "Tee Sheet Automation", "AI Concierge", "On-Course F&B Ordering",
+                "Missed-Call Text-Back", "Event Lead Capture", "Member CRM",
+                "Review Generation", "Staff Workflows", "Live Course Map", "Payments",
+              ]}
+            />
+          </div>
+        </section>
         <FeaturesGrid />
         <ProblemsSection />
         <SolutionsSection />
         <WorkflowDemo />
         <DashboardSection />
+
+        <section className="bg-[hsl(146_46%_9%)] px-4 md:px-6 py-20 md:py-28 text-white">
+          <div className="container mx-auto">
+            <div className="mb-12 text-center">
+              <p className="eyebrow text-accent mb-5">One Platform, Three Views</p>
+              <RevealText as="h2" className="text-3xl md:text-4xl lg:text-5xl font-semibold">
+                Built for everyone at your club
+              </RevealText>
+            </div>
+            <div className="mx-auto max-w-6xl">
+              <PortalMiniScreens />
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#04130c] px-4 md:px-6 py-20 md:py-28 text-white">
+          <div className="container mx-auto">
+            <div className="mb-12 text-center">
+              <p className="eyebrow text-[hsl(145_58%_55%)] mb-5">Watch It Run</p>
+              <RevealText as="h2" className="text-3xl md:text-4xl lg:text-5xl font-semibold">
+                Your club, running itself in real time
+              </RevealText>
+            </div>
+            <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-2">
+              <LiveActivityFeed />
+              <AICyclingPanel />
+            </div>
+          </div>
+        </section>
+
         <AIScriptsSection />
         <PricingSection />
         <ROISection />
@@ -74,6 +117,7 @@ function HeroSection() {
     <section className="relative overflow-hidden bg-[#04130c] text-white px-4 md:px-6 pt-24 pb-16 md:pt-28 md:pb-20">
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(120%_85%_at_72%_-5%,_hsl(155_55%_18%/0.6),_transparent_60%)]" />
+        <MeshHero className="absolute inset-0 opacity-50" />
         <div className="animate-float-a absolute -top-24 right-0 h-[480px] w-[480px] rounded-full bg-[hsl(145_58%_45%)]/15 blur-[120px]" />
         <div className="animate-float-b absolute bottom-0 left-0 h-[420px] w-[420px] rounded-full bg-accent/15 blur-[120px]" />
       </div>

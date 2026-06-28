@@ -544,6 +544,26 @@
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
+@keyframes fw-bar {
+  0%, 100% { transform: scaleY(0.45); }
+  50%      { transform: scaleY(1); }
+}
+@keyframes fw-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+@keyframes fw-pulse-soft {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.06); opacity: 0.9; }
+}
+@keyframes fw-scan {
+  0%   { transform: translateY(-120%); }
+  100% { transform: translateY(420%); }
+}
+
+@layer utilities {
+  .fw-scanline { animation: fw-scan 3.6s linear infinite; }
+}
 
 /* Accessibility: honor reduced-motion globally. Kills animations,
    transitions, transforms, and smooth scroll for users who opt out. */
