@@ -561,8 +561,19 @@
   100% { transform: translateY(420%); }
 }
 
+@keyframes fw-spin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+@keyframes fw-spin-rev {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(-360deg); }
+}
+
 @layer utilities {
   .fw-scanline { animation: fw-scan 3.6s linear infinite; }
+  .fw-spin { animation: fw-spin 60s linear infinite; }
+  .fw-spin-rev { animation: fw-spin-rev 90s linear infinite; }
 }
 
 /* Accessibility: honor reduced-motion globally. Kills animations,

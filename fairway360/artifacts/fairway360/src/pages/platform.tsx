@@ -11,6 +11,7 @@ import { Seo } from "@/components/seo";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { RevealText } from "@/components/anim/reveal";
+import { TeeSheetDemo } from "@/components/marketing/tee-sheet-demo";
 import infographic from "@assets/image_1781339694006.png";
 
 type Feature = {
@@ -76,6 +77,9 @@ function RadialHub() {
   const R = 40;
   return (
     <div className="relative mx-auto hidden aspect-square w-full max-w-[1140px] lg:block">
+      {/* slow-rotating orbit rings (decorative; frozen under reduced-motion) */}
+      <div aria-hidden className="fw-spin absolute left-1/2 top-1/2 aspect-square w-[80%] rounded-full border border-dashed border-accent/15" />
+      <div aria-hidden className="fw-spin-rev absolute left-1/2 top-1/2 aspect-square w-[58%] rounded-full border border-accent/10" />
       {/* connector lines */}
       <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden="true">
         <defs>
@@ -352,6 +356,20 @@ export function Platform() {
                 <FeatureSection key={s.title} s={s} index={i} />
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* interactive tee-sheet demo */}
+        <section className="px-4 pb-8 md:px-6">
+          <div className="container mx-auto max-w-4xl">
+            <div className="mb-8 text-center">
+              <p className="eyebrow mb-4 text-accent">Try It Yourself</p>
+              <RevealText as="h2" className="text-3xl font-semibold md:text-4xl">A tee sheet that books itself</RevealText>
+              <p className="mx-auto mt-4 max-w-2xl text-white/65">
+                This is the real interface — tap a slot or simulate demand and watch the fill rate and revenue climb.
+              </p>
+            </div>
+            <TeeSheetDemo />
           </div>
         </section>
 
