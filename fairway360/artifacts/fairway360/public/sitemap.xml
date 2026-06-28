@@ -1,52 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://fairway360.com/</loc>
+    <loc>https://fairway360.io/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://fairway360.com/platform</loc>
+    <loc>https://fairway360.io/platform</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://fairway360.com/solutions</loc>
+    <loc>https://fairway360.io/solutions</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://fairway360.com/dining</loc>
+    <loc>https://fairway360.io/dining</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://fairway360.com/events</loc>
+    <loc>https://fairway360.io/events</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://fairway360.com/automations</loc>
+    <loc>https://fairway360.io/automations</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://fairway360.com/pricing</loc>
+    <loc>https://fairway360.io/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://fairway360.com/demo</loc>
+    <loc>https://fairway360.io/demo</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://fairway360.com/privacy</loc>
+    <loc>https://fairway360.io/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://fairway360.com/terms</loc>
+    <loc>https://fairway360.io/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>

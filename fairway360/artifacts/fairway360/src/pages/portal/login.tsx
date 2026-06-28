@@ -122,7 +122,7 @@ export function PortalLogin() {
             Forgot your password?
           </Link>
           <Link href="/" className="text-sm text-white/50 hover:text-white transition-colors" data-testid="link-back-site">
-            ← Back to fairway360.com
+            ← Back to fairway360.io
           </Link>
         </div>
       </div>

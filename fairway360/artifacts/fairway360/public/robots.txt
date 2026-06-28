@@ -5,4 +5,4 @@ Allow: /
 Disallow: /portal
 Disallow: /api
 
-Sitemap: https://fairway360.com/sitemap.xml
+Sitemap: https://fairway360.io/sitemap.xml

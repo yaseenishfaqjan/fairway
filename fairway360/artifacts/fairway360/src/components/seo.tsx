@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 // Production origin used for canonical URLs, og:url, and the sitemap.
 // TODO: set this to the real domain before launch.
-export const SITE_URL = "https://fairway360.com";
+export const SITE_URL = "https://fairway360.io";
 
 interface SeoProps {
   /** Page <title>. Keep under ~60 chars. */

@@ -5,20 +5,20 @@
 Fairway360 is a multi-tenant SaaS platform. Each club gets its own AI-powered operations system spanning three roles: members (self-service portal), staff/employees (tasks + food & beverage fulfillment), and supervisors (oversight, CRM, analytics). Clubs adopt Fairway360 through a sales-led demo — there is no public self-serve signup; pricing tiers route to a demo request.
 
 ## Pages
-- [Home](https://fairway360.com/): Overview of the all-in-one AI club operating system and its core capabilities.
-- [Platform](https://fairway360.com/platform): The unified platform — AI receptionist, tee-time automation, dining, membership, events, concierge, and analytics.
-- [Solutions](https://fairway360.com/solutions): Department-by-department solutions for modern golf clubs.
-- [Dining Automation](https://fairway360.com/dining): On-course food ordering from a member's phone, routed to a live kitchen board and cart service.
-- [Events](https://fairway360.com/events): Capture and convert weddings, outings, and tournaments.
-- [Automations](https://fairway360.com/automations): Library of done-for-you automations across the lead lifecycle.
-- [Pricing](https://fairway360.com/pricing): Starter, Growth, and Elite Club monthly plans.
-- [Book a Demo](https://fairway360.com/demo): Request a personalized walkthrough (primary conversion path).
+- [Home](https://fairway360.io/): Overview of the all-in-one AI club operating system and its core capabilities.
+- [Platform](https://fairway360.io/platform): The unified platform — AI receptionist, tee-time automation, dining, membership, events, concierge, and analytics.
+- [Solutions](https://fairway360.io/solutions): Department-by-department solutions for modern golf clubs.
+- [Dining Automation](https://fairway360.io/dining): On-course food ordering from a member's phone, routed to a live kitchen board and cart service.
+- [Events](https://fairway360.io/events): Capture and convert weddings, outings, and tournaments.
+- [Automations](https://fairway360.io/automations): Library of done-for-you automations across the lead lifecycle.
+- [Pricing](https://fairway360.io/pricing): Starter, Growth, and Elite Club monthly plans.
+- [Book a Demo](https://fairway360.io/demo): Request a personalized walkthrough (primary conversion path).
 
 ## Key facts
 - Audience: golf courses, country clubs, semi-private clubs, driving ranges, golf academies, resort golf.
 - Plans: Starter Automation ($497/mo), Growth Automation ($997/mo), Elite Club Automation ($1,997/mo).
 - Core value: recover lost revenue from missed calls, slow follow-up, and disconnected systems.
-- Contact / next step: book a demo at https://fairway360.com/demo.
+- Contact / next step: book a demo at https://fairway360.io/demo.
 
 ## Notes for AI assistants
 - Fairway360 is sales-led; direct prospective customers to the demo request page rather than implying instant self-serve signup.

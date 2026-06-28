@@ -93,7 +93,7 @@ export function PrivacyPolicy() {
       </section>
       <section>
         <h2>Contact</h2>
-        <p>Questions about this policy? Email privacy@fairway360.com.</p>
+        <p>Questions about this policy? Email privacy@fairway360.io.</p>
       </section>
     </LegalShell>
   );
@@ -152,7 +152,7 @@ export function TermsOfService() {
       </section>
       <section>
         <h2>Contact</h2>
-        <p>Questions about these terms? Email legal@fairway360.com.</p>
+        <p>Questions about these terms? Email legal@fairway360.io.</p>
       </section>
     </LegalShell>
   );
