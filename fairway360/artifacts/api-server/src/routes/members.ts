@@ -1,8 +1,10 @@
 import { Router, type IRouter } from "express";
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { z } from "zod";
 import {
   db,
   members,
+  memberPreferences,
   users,
   memberPayments,
   menuItems,
@@ -39,6 +41,71 @@ import {
 
 const router: IRouter = Router();
 const member = [requireAuth, requireRole("member")];
+
+// ── Member self-service preferences (feeds AI episodic memory — §6 onboarding) ──
+
+const MyPreferencesBody = z.object({
+  allergens: z.array(z.string().max(40)).max(30).optional(),
+  dietaryRestrictions: z.array(z.string().max(40)).max(30).optional(),
+  usualTable: z.string().max(60).nullable().optional(),
+  communicationStyle: z.enum(["formal", "friendly", "casual", "brief"]).nullable().optional(),
+});
+
+router.get(
+  "/me/preferences",
+  ...member,
+  asyncHandler(async (req, res) => {
+    const { userId, clubId } = req.auth!;
+    const [row] = await db
+      .select({ p: memberPreferences })
+      .from(members)
+      .leftJoin(memberPreferences, eq(memberPreferences.memberId, members.id))
+      .where(and(eq(members.userId, userId), eq(members.clubId, clubId)));
+    if (!row) throw badRequest("No member profile for this user.");
+    const p = row.p;
+    res.json({
+      allergens: (p?.allergens as string[]) ?? [],
+      dietaryRestrictions: (p?.dietaryRestrictions as string[]) ?? [],
+      usualTable: p?.usualTable ?? null,
+      communicationStyle: p?.communicationStyle ?? null,
+    });
+  }),
+);
+
+router.patch(
+  "/me/preferences",
+  ...member,
+  asyncHandler(async (req, res) => {
+    const { userId, clubId } = req.auth!;
+    const patch = MyPreferencesBody.parse(req.body);
+    const [m] = await db
+      .select()
+      .from(members)
+      .where(and(eq(members.userId, userId), eq(members.clubId, clubId)));
+    if (!m) throw badRequest("No member profile for this user.");
+
+    const [existing] = await db
+      .select()
+      .from(memberPreferences)
+      .where(eq(memberPreferences.memberId, m.id));
+    if (existing) {
+      await db
+        .update(memberPreferences)
+        .set({ ...patch, updatedAt: new Date() })
+        .where(eq(memberPreferences.id, existing.id));
+    } else {
+      await db.insert(memberPreferences).values({
+        clubId,
+        memberId: m.id,
+        allergens: patch.allergens ?? [],
+        dietaryRestrictions: patch.dietaryRestrictions ?? [],
+        usualTable: patch.usualTable ?? null,
+        communicationStyle: patch.communicationStyle ?? null,
+      });
+    }
+    res.json({ ok: true });
+  }),
+);
 
 async function memberAndUser(userId: string, clubId: string) {
   const [row] = await db

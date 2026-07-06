@@ -183,6 +183,7 @@ export const Role = {
   supervisor: 'supervisor',
   employee: 'employee',
   member: 'member',
+  super_admin: 'super_admin',
 } as const;
 
 export interface LoginRequest {
@@ -295,6 +296,11 @@ export const MenuCategory = {
   Drinks: 'Drinks',
   Food: 'Food',
   Snacks: 'Snacks',
+  Breakfast: 'Breakfast',
+  Lunch: 'Lunch',
+  Dinner: 'Dinner',
+  Beverages: 'Beverages',
+  Specials: 'Specials',
 } as const;
 
 export interface MenuItem {

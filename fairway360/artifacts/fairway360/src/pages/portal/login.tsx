@@ -9,16 +9,41 @@ import {
   Loader2,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Seo } from "@/components/seo";
 import { PortalLogo } from "@/components/portal/portal-logo";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+
+const ROLE_HOME: Record<string, string> = {
+  supervisor: "/portal/supervisor",
+  employee: "/portal/employees",
+  member: "/portal/members",
+  super_admin: "/portal/admin",
+};
 
 export function PortalLogin() {
   const [, setLocation] = useLocation();
   const { login } = useAuth();
   const { toast } = useToast();
   const [pending, setPending] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function signIn(e: React.FormEvent) {
+    e.preventDefault();
+    if (pending) return;
+    setPending("form");
+    try {
+      const user = await login(email.trim(), password);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      setLocation(ROLE_HOME[user.role] ?? "/portal");
+    } catch {
+      toast({ title: "Could not sign in", description: "Check your email and password.", variant: "destructive" });
+      setPending(null);
+    }
+  }
 
   const portals = [
     {
@@ -74,7 +99,7 @@ export function PortalLogin() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[hsl(146_46%_17%)] px-4 py-16 text-white">
+    <div className="min-h-dvh flex flex-col items-center justify-center bg-[hsl(146_46%_17%)] px-4 py-16 text-white">
       <Seo title="Log In | Fairway360" description="Log in to your Fairway360 golf club management dashboard." path="/portal" noindex />
       <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_top,_white,_transparent_60%)] pointer-events-none" />
       <div className="relative z-10 w-full max-w-5xl">
@@ -118,6 +143,37 @@ export function PortalLogin() {
             </button>
           ))}
         </div>
+
+        <form onSubmit={signIn} className="mx-auto mt-10 w-full max-w-sm space-y-3 rounded-2xl border border-white/10 bg-white/[0.05] p-5">
+          <div className="text-center text-sm font-medium text-white/80">Or sign in with your club account</div>
+          <Input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="border-white/15 bg-white/5 text-white placeholder:text-white/35"
+            data-testid="input-login-email"
+          />
+          <Input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="border-white/15 bg-white/5 text-white placeholder:text-white/35"
+            data-testid="input-login-password"
+          />
+          <Button
+            type="submit"
+            className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+            disabled={pending !== null || !email.includes("@") || password.length < 8}
+            data-testid="button-login-submit"
+          >
+            {pending === "form" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
+          </Button>
+          <p className="text-center text-xs text-white/45">
+            New club? <Link href="/onboarding" className="text-accent hover:underline" data-testid="link-onboarding">Set up your club</Link>
+          </p>
+        </form>
 
         <div className="mt-8 flex flex-col items-center gap-3 text-center">
           <Link href="/portal/forgot" className="text-sm text-accent hover:underline" data-testid="link-forgot-password">

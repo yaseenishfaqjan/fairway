@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, text } from "drizzle-orm/pg-core";
+import { boolean, pgEnum, pgTable, text } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { pk, timestamps } from "./_helpers";
@@ -16,6 +16,16 @@ export const clubs = pgTable("clubs", {
   stripeCustomerId: text("stripe_customer_id"),
   plan: clubPlan("plan").notNull().default("trial"),
   status: clubStatus("status").notNull().default("active"),
+  // Branding + locale (set during onboarding, editable in club settings)
+  logoUrl: text("logo_url"),
+  primaryColor: text("primary_color").notNull().default("#1B3A2D"),
+  accentColor: text("accent_color").notNull().default("#C9A84C"),
+  currency: text("currency").notNull().default("USD"),
+  countryCode: text("country_code").notNull().default("US"),
+  phone: text("phone"),
+  address: text("address"),
+  onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
+  onboardingStep: text("onboarding_step"), // last completed wizard step (1-6)
   ...timestamps,
 });
 

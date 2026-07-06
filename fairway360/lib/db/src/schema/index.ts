@@ -11,3 +11,7 @@ export * from "./billing";
 export * from "./messaging";
 export * from "./audit";
 export * from "./sessions";
+export * from "./invites";
+export * from "./knowledge";
+export * from "./preferences";
+export * from "./agents";

@@ -49,11 +49,21 @@ function scan(
   return null;
 }
 
-export function detectEscalation(text: string): EscalationResult {
+/**
+ * @param customL2Keywords Club-specific trigger phrases (from the supervisor's
+ *   agent config) treated as Level 2 on top of the built-in lists.
+ */
+export function detectEscalation(
+  text: string,
+  customL2Keywords: string[] = [],
+): EscalationResult {
   const t = text.toLowerCase();
   const l3 = scan(t, L3);
   if (l3) return { level: 3, triggerType: l3.type, keywords: l3.keywords };
-  const l2 = scan(t, L2);
+  const groups = customL2Keywords.length
+    ? [...L2, { type: "club_custom", words: customL2Keywords.map((w) => w.toLowerCase()) }]
+    : L2;
+  const l2 = scan(t, groups);
   if (l2) return { level: 2, triggerType: l2.type, keywords: l2.keywords };
   const l1 = scan(t, L1);
   if (l1) return { level: 1, triggerType: l1.type, keywords: l1.keywords };

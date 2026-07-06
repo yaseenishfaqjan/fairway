@@ -13,4 +13,9 @@ export const MenuCategory = {
   Drinks: 'Drinks',
   Food: 'Food',
   Snacks: 'Snacks',
+  Breakfast: 'Breakfast',
+  Lunch: 'Lunch',
+  Dinner: 'Dinner',
+  Beverages: 'Beverages',
+  Specials: 'Specials',
 } as const;

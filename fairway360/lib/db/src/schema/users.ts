@@ -17,6 +17,7 @@ export const userRole = pgEnum("user_role", [
   "supervisor",
   "employee",
   "member",
+  "super_admin", // Fairway360 platform team — manages all tenants
 ]);
 export const userStatus = pgEnum("user_status", ["active", "invited", "disabled"]);
 

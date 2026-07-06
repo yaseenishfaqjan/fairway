@@ -29,7 +29,7 @@ export const LoginResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "initials": zod.string().optional(),
-  "role": zod.enum(['supervisor', 'employee', 'member']),
+  "role": zod.enum(['supervisor', 'employee', 'member', 'super_admin']),
   "clubName": zod.string(),
   "clubSlug": zod.string().optional()
 })
@@ -72,7 +72,7 @@ export const GetCurrentUserResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "initials": zod.string().optional(),
-  "role": zod.enum(['supervisor', 'employee', 'member']),
+  "role": zod.enum(['supervisor', 'employee', 'member', 'super_admin']),
   "clubName": zod.string(),
   "clubSlug": zod.string().optional()
 })
@@ -154,7 +154,7 @@ export const GetMenuResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "price": zod.number(),
-  "category": zod.enum(['Drinks', 'Food', 'Snacks']),
+  "category": zod.enum(['Drinks', 'Food', 'Snacks', 'Breakfast', 'Lunch', 'Dinner', 'Beverages', 'Specials']),
   "image": zod.string()
 })
 export const GetMenuResponse = zod.array(GetMenuResponseItem)

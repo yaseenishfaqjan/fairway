@@ -1,6 +1,7 @@
 import {
   boolean,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -16,7 +17,16 @@ import { members } from "./users";
 import { carts, rounds } from "./golf";
 import { pk, timestamps } from "./_helpers";
 
-export const menuCategory = pgEnum("menu_category", ["Drinks", "Food", "Snacks"]);
+export const menuCategory = pgEnum("menu_category", [
+  "Drinks",
+  "Food",
+  "Snacks",
+  "Breakfast",
+  "Lunch",
+  "Dinner",
+  "Beverages",
+  "Specials",
+]);
 
 export const menuItems = pgTable("menu_items", {
   id: pk(),
@@ -24,10 +34,17 @@ export const menuItems = pgTable("menu_items", {
     .notNull()
     .references(() => clubs.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
+  description: text("description"),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   category: menuCategory("category").notNull(),
   imageUrl: text("image_url"),
+  allergens: jsonb("allergens").notNull().default([]), // ["nuts", "dairy", ...]
+  dietaryFlags: jsonb("dietary_flags").notNull().default([]), // ["vegetarian", ...]
+  prepTimeMinutes: integer("prep_time_minutes").notNull().default(15),
+  isFeatured: boolean("is_featured").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
   available: boolean("available").notNull().default(true),
+  archived: boolean("archived").notNull().default(false),
   ...timestamps,
 });
 

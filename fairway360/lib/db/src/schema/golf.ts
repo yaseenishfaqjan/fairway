@@ -43,6 +43,7 @@ export const teeTimeStatus = pgEnum("tee_time_status", [
   "confirmed",
   "checked_in",
   "cancelled",
+  "blocked",
 ]);
 
 export const teeTimes = pgTable("tee_times", {
@@ -56,8 +57,10 @@ export const teeTimes = pgTable("tee_times", {
   }),
   startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
   players: smallint("players").notNull().default(1),
+  maxPlayers: smallint("max_players").notNull().default(4),
   holes: smallint("holes").notNull().default(18),
   status: teeTimeStatus("status").notNull().default("pending"),
+  notes: text("notes"), // block reason, starter notes
   ...timestamps,
 });
 

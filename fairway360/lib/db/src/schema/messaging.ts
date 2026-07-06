@@ -104,6 +104,7 @@ export const chatChannels = pgTable("chat_channels", {
   department: text("department"), // routes to the dept agent / staff
   displayOrder: integer("display_order").notNull().default(0),
   visibleToMembers: boolean("visible_to_members").notNull().default(true),
+  archived: boolean("archived").notNull().default(false), // soft delete — history preserved
   ...timestamps,
 });
 

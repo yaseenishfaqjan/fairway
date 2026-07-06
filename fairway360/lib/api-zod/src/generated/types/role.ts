@@ -13,4 +13,5 @@ export const Role = {
   supervisor: 'supervisor',
   employee: 'employee',
   member: 'member',
+  super_admin: 'super_admin',
 } as const;

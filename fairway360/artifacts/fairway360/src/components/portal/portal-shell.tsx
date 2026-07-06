@@ -252,7 +252,7 @@ export function PortalShell({
   }
 
   return (
-    <div className="relative min-h-screen bg-[#04130c] text-white">
+    <div className="relative min-h-dvh bg-[#04130c] text-white">
       {/* Ambient emerald + gold backdrop */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(125%_85%_at_50%_-10%,hsl(150_60%_16%/0.65),transparent_60%)]" />
@@ -299,8 +299,8 @@ export function PortalShell({
         )}
       </AnimatePresence>
 
-      {/* Mobile top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-white/10 bg-[#04130c]/85 px-4 py-3 backdrop-blur-xl lg:hidden">
+      {/* Mobile top bar — pad the status-bar safe area on notched phones. */}
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-white/10 bg-[#04130c]/85 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-xl lg:hidden">
         <button
           onClick={() => setOpen(true)}
           aria-label="Open menu"
@@ -318,9 +318,9 @@ export function PortalShell({
         </div>
       </header>
 
-      {/* Content */}
+      {/* Content — pad the home-indicator safe area at the bottom. */}
       <div className="lg:pl-64">
-        <main className="mx-auto max-w-6xl px-4 pb-16 pt-6">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 pt-6 pb-[max(4rem,calc(env(safe-area-inset-bottom)+4rem))]">{children}</main>
       </div>
     </div>
   );

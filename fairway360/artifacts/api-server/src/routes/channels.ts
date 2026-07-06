@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import { and, asc, eq } from "drizzle-orm";
-import { db, chatChannels, chatMessages, escalations, users } from "@workspace/db";
+import { db, agentSessions, chatChannels, chatMessages, escalations, users } from "@workspace/db";
 import { SendChannelMessageBody } from "@workspace/api-zod";
-import type { ChatChannel, ChatMessage as DbChatMessage } from "@workspace/db";
+import type { AgentConfig, ChatChannel, ChatMessage as DbChatMessage } from "@workspace/db";
 import { asyncHandler, badRequest, forbidden, notFound } from "../lib/http";
 import { requireAuth } from "../middleware/auth";
 import { publishChannelEvent } from "../lib/realtime";
@@ -11,15 +11,19 @@ import { channelAgentReply, channelAgentName } from "../lib/channel-agent";
 import { detectEscalation, holdingMessage, type EscalationResult } from "../lib/escalation";
 import { isAnyStaffAvailable } from "../lib/presence";
 import { isDelegated } from "../lib/delegation";
+import { getAgentConfig, withinWorkingHours, learnFromSession } from "../lib/memory";
 import { allowAgentReply } from "../lib/ai-throttle";
 import { notifyMany } from "../lib/notify";
+import { sendSms } from "../lib/sms";
 import { logger } from "../lib/logger";
 
 // Notify supervisors (in-app bell + push) when an escalation is raised.
+// Level 3 additionally sends an SMS to every supervisor with a phone number
+// (build-doc §T10.3 — env-gated: no-op without Twilio, logged to audit trail).
 async function notifySupervisors(clubId: string, memberName: string, level: number, channelName: string): Promise<void> {
   try {
     const sups = await db
-      .select({ id: users.id })
+      .select({ id: users.id, phone: users.phone })
       .from(users)
       .where(and(eq(users.clubId, clubId), eq(users.role, "supervisor")));
     await notifyMany(clubId, sups.map((s) => s.id), {
@@ -28,6 +32,18 @@ async function notifySupervisors(clubId: string, memberName: string, level: numb
       body: `${memberName} in ${channelName} needs attention`,
       link: "/portal/supervisor",
     });
+    if (level >= 3) {
+      const withPhone = sups.filter((s) => s.phone);
+      if (withPhone.length === 0) {
+        logger.warn({ clubId }, "escalation L3: no supervisor phone on file — SMS skipped");
+      }
+      for (const s of withPhone) {
+        void sendSms(
+          s.phone!,
+          `Fairway360 URGENT — Level 3 escalation: ${memberName} in ${channelName}. Open the supervisor portal now.`,
+        );
+      }
+    }
   } catch (err) {
     logger.debug({ err }, "escalation: supervisor notify failed");
   }
@@ -152,18 +168,31 @@ router.post(
     // normally (L1 also logged). All fire-and-forget.
     if (role === "member" && ch.visibleToMembers) {
       const memberName = sender?.name ?? "Member";
-      const esc = detectEscalation(content.trim());
+      // Club-specific escalation keywords come from the agent's config (§5.6).
+      const cfg = await getAgentConfig(clubId, ch.department ?? "general").catch(() => null);
+      const esc = detectEscalation(content.trim(), (cfg?.escalationKeywords as string[]) ?? []);
       // §7 Presence: the AI agent only takes over when no staff is "available".
-      const agentActive = !isAnyStaffAvailable(clubId);
+      // §5.6: the supervisor can disable an agent or restrict its working hours.
+      const agentActive =
+        !isAnyStaffAvailable(clubId) &&
+        (cfg?.isActive ?? true) &&
+        withinWorkingHours(cfg ?? null);
+      // Episodic memory learns from every member message (allergens etc.).
+      void learnFromSession({
+        clubId,
+        memberUserId: userId,
+        memberMessage: content.trim(),
+        summary: `Messaged ${ch.name}: ${content.trim().slice(0, 120)}`,
+      });
       if (esc.level >= 2) {
         // Always raise the escalation so staff see it; the agent posts a holding
         // message only when it's actually covering (no staff available).
-        void escalateAndHold(clubId, ch, userId, memberName, content.trim(), esc as EscalationResult & { level: 2 | 3 }, agentActive);
+        void escalateAndHold(clubId, ch, userId, memberName, content.trim(), esc as EscalationResult & { level: 2 | 3 }, agentActive, cfg);
       } else if (agentActive) {
         if (esc.level === 1) {
           void recordEscalation(clubId, ch, userId, memberName, content.trim(), esc, null);
         }
-        void respondWithAgent(clubId, ch, memberName, content.trim());
+        void respondWithAgent(clubId, ch, memberName, content.trim(), userId, cfg);
       } else if (esc.level === 1) {
         void recordEscalation(clubId, ch, userId, memberName, content.trim(), esc, null);
       }
@@ -222,6 +251,7 @@ async function escalateAndHold(
   message: string,
   esc: EscalationResult & { level: 2 | 3 },
   postHolding: boolean,
+  cfg?: AgentConfig | null,
 ): Promise<void> {
   const hold = holdingMessage(esc.level, memberName.split(" ")[0] || "there");
   if (postHolding) {
@@ -232,7 +262,7 @@ async function escalateAndHold(
         clubId,
         channelId: ch.id,
         senderUserId: null,
-        senderName: channelAgentName(ch.department),
+        senderName: channelAgentName(ch.department, cfg),
         senderRole: "agent",
         aiGenerated: true,
         content: hold,
@@ -248,6 +278,22 @@ async function escalateAndHold(
     }
   }
   await recordEscalation(clubId, ch, memberUserId, memberName, message, esc, hold);
+  // Session log for agent stats (§5.6).
+  try {
+    await db.insert(agentSessions).values({
+      clubId,
+      agentKey: ch.department ?? "general",
+      channelId: ch.id,
+      memberUserId,
+      messageCount: 1,
+      escalated: true,
+      escalationLevel: esc.level,
+      summary: message.slice(0, 200),
+      endedAt: new Date(),
+    });
+  } catch (err) {
+    logger.debug({ err }, "agent-session: failed to record escalation session");
+  }
 }
 
 // Generate and post the department agent's reply to a channel.
@@ -256,6 +302,8 @@ async function respondWithAgent(
   ch: ChatChannel,
   memberName: string,
   message: string,
+  memberUserId?: string,
+  cfg?: AgentConfig | null,
 ): Promise<void> {
   // Cost guard: skip the AI reply if the club has exceeded its window budget.
   // The member's message is already saved; staff can still answer.
@@ -275,7 +323,9 @@ async function respondWithAgent(
       clubId,
       department: ch.department,
       memberName,
+      memberUserId,
       message,
+      config: cfg,
       history: recent.map((m) => ({
         senderName: m.senderName,
         content: m.content,
@@ -289,7 +339,7 @@ async function respondWithAgent(
         clubId,
         channelId: ch.id,
         senderUserId: null,
-        senderName: channelAgentName(ch.department),
+        senderName: channelAgentName(ch.department, cfg),
         senderRole: "agent",
         aiGenerated: true,
         content: reply,
@@ -301,6 +351,19 @@ async function respondWithAgent(
       channelId: ch.id,
       messageId: agentMsg.id,
     });
+
+    // Session log for agent stats (§5.6).
+    if (memberUserId) {
+      await db.insert(agentSessions).values({
+        clubId,
+        agentKey: ch.department ?? "general",
+        channelId: ch.id,
+        memberUserId,
+        messageCount: 1,
+        summary: message.slice(0, 200),
+        endedAt: new Date(),
+      });
+    }
   } catch (err) {
     logger.error({ err }, "channel-agent: failed to post reply");
   }

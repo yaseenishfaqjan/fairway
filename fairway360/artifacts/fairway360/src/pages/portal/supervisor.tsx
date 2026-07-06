@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, Map as MapIcon, UserPlus, CalendarCheck, ListChecks,
   Navigation, Phone, Check, MapPin, AlertTriangle, Coffee, Users,
-  ChevronRight, BellRing, MessageSquare, UserCheck, Mail, Plus, Sparkles,
+  ChevronRight, BellRing, MessageSquare, UserCheck, Mail, Plus, Sparkles, Wrench,
 } from "lucide-react";
 import { PortalShell, type PortalNavItem, type PortalNotification } from "@/components/portal/portal-shell";
 import { CourseMap } from "@/components/portal/course-map";
@@ -39,8 +39,9 @@ import {
   type MemberOnCourse, type CourseStatus,
 } from "@/lib/portal-data";
 import { AddEmployeeDialog, AddMemberDialog } from "@/components/portal/onboarding-dialogs";
+import { ManageClub } from "@/components/portal/manage-club";
 
-type SectionKey = "overview" | "team" | "members" | "map" | "service" | "channels" | "escalations" | "leads" | "bookings" | "tasks";
+type SectionKey = "overview" | "team" | "members" | "map" | "service" | "channels" | "escalations" | "leads" | "bookings" | "tasks" | "manage";
 
 const NAV: PortalNavItem[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
@@ -53,6 +54,7 @@ const NAV: PortalNavItem[] = [
   { key: "leads", label: "Leads", icon: UserPlus },
   { key: "bookings", label: "Tee Sheet", icon: CalendarCheck },
   { key: "tasks", label: "Tasks", icon: ListChecks },
+  { key: "manage", label: "Manage Club", icon: Wrench },
 ];
 
 const statusDark: Record<string, string> = {
@@ -926,6 +928,8 @@ export function SupervisorPortal() {
               </div>
             </Glass>
           )}
+
+          {section === "manage" && <ManageClub />}
         </motion.div>
 
       <Dialog open={!!msgTarget} onOpenChange={(o) => { if (!o) setMsgTarget(null); }}>

@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { randomBytes, createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import { db, users, clubs } from "@workspace/db";
+import { db, users, clubs, inviteLinks } from "@workspace/db";
 import { LoginBody, ForgotPasswordBody, ResetPasswordBody } from "@workspace/api-zod";
 import type { AuthUser } from "@workspace/api-zod";
 import { asyncHandler, badRequest, unauthorized } from "../lib/http";
@@ -149,6 +149,11 @@ router.post(
         passwordResetExpiresAt: null,
       })
       .where(eq(users.id, user.id));
+    // If this token was an invite, mark it used (single-use registry).
+    await db
+      .update(inviteLinks)
+      .set({ usedAt: new Date(), usedBy: user.id, useCount: 1, isActive: false })
+      .where(eq(inviteLinks.tokenHash, tokenHash));
     res.json({ ok: true });
   }),
 );

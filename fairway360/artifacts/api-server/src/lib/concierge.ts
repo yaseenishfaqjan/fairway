@@ -17,6 +17,7 @@ import {
 } from "@workspace/db";
 import { logger } from "./logger";
 import { llmEnabled, llmComplete } from "./llm";
+import { getEpisodicMemory, learnFromSession, loadSemanticMemory } from "./memory";
 
 const num = (v: string | null | undefined): number => (v == null ? 0 : Number(v));
 
@@ -160,6 +161,34 @@ async function buildMemberContext(auth: ConciergeAuth): Promise<string> {
       : "ANNOUNCEMENTS: none.",
   );
 
+  // Layer 2 (episodic) + Layer 3 (knowledge base) from the memory system.
+  try {
+    const [episodic, semantic] = await Promise.all([
+      getEpisodicMemory(clubId, userId),
+      loadSemanticMemory(clubId),
+    ]);
+    if (episodic) {
+      const mem: string[] = [];
+      const allergens = episodic.allergens as string[];
+      if (allergens?.length)
+        mem.push(`ALLERGENS (CRITICAL — never suggest items with these): ${allergens.join(", ")}`);
+      const favs = episodic.favoriteItems as { name: string; orderedCount: number }[];
+      if (favs?.length)
+        mem.push(`Favourite items: ${favs.slice(0, 5).map((f) => f.name).join(", ")}`);
+      if (episodic.usualTable) mem.push(`Usual table/location: ${episodic.usualTable}`);
+      if (episodic.vipNotes) mem.push(`VIP notes: ${episodic.vipNotes}`);
+      if (mem.length) parts.push("MEMBER MEMORY:\n" + mem.map((m) => `- ${m}`).join("\n"));
+    }
+    const kb: string[] = [];
+    if (semantic.hours) kb.push(`Hours: ${semantic.hours}`);
+    if (semantic.dressCode) kb.push(`Dress code: ${semantic.dressCode}`);
+    for (const f of semantic.faqs) kb.push(`${f.title}: ${f.content}`);
+    for (const p of semantic.policies) kb.push(`${p.title}: ${p.content}`);
+    if (kb.length) parts.push("CLUB KNOWLEDGE:\n" + kb.map((k) => `- ${k}`).join("\n"));
+  } catch (err) {
+    logger.debug({ err }, "concierge: memory layers unavailable");
+  }
+
   return parts.join("\n\n");
 }
 
@@ -190,6 +219,14 @@ export async function conciergeReply(
   auth: ConciergeAuth,
   message: string,
 ): Promise<string> {
+  // Episodic memory learns from every concierge message too.
+  void learnFromSession({
+    clubId: auth.clubId,
+    memberUserId: auth.userId,
+    memberMessage: message,
+    summary: `Concierge chat: ${message.slice(0, 120)}`,
+  });
+
   if (!llmEnabled()) return fallbackReply(message);
 
   let context: string;

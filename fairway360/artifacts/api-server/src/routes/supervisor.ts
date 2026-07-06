@@ -625,7 +625,12 @@ router.post(
       employeeNo: `EMP-${String((c ?? 0) + 1).padStart(3, "0")}`,
       currentStatus: "Clocked Out",
     });
-    const invite = await issueInvite(user.id, name, normEmail, club?.name ?? "your club");
+    const invite = await issueInvite(user.id, name, normEmail, club?.name ?? "your club", {
+      clubId,
+      role,
+      department: null,
+      createdBy: req.auth!.userId,
+    });
     res.status(201).json({ id: user.id, inviteLink: invite.link, emailed: invite.emailed });
   }),
 );
@@ -694,7 +699,12 @@ router.post(
       memberSince: new Date().getFullYear(),
       balance: "0",
     });
-    const invite = await issueInvite(user.id, name, normEmail, club?.name ?? "your club");
+    const invite = await issueInvite(user.id, name, normEmail, club?.name ?? "your club", {
+      clubId,
+      role: "member",
+      department: null,
+      createdBy: req.auth!.userId,
+    });
     res.status(201).json({ id: user.id, inviteLink: invite.link, emailed: invite.emailed });
   }),
 );

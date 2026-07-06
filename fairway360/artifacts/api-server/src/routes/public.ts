@@ -2,12 +2,33 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, clubs, leads } from "@workspace/db";
 import { CreateDemoRequestBody } from "@workspace/api-zod";
-import { asyncHandler } from "../lib/http";
+import { asyncHandler, notFound } from "../lib/http";
 import { sendDemoConfirmation, notifySalesOfDemo } from "../lib/email";
 import { rateLimit } from "../lib/rate-limit";
 import { captureClientError } from "../lib/monitoring";
+import { resolveTenantForRequest } from "../lib/tenant";
 
 const router: IRouter = Router();
+
+// Public tenant branding — resolved from X-Tenant-Slug header, subdomain, or
+// ?slug=. Lets a club's login/registration page show its own name and colors
+// before any authentication.
+router.get(
+  "/public/club-info",
+  asyncHandler(async (req, res) => {
+    const club = await resolveTenantForRequest(req);
+    if (!club) throw notFound("Club not identified.");
+    res.json({
+      name: club.name,
+      slug: club.slug,
+      logoUrl: club.logoUrl,
+      primaryColor: club.primaryColor,
+      accentColor: club.accentColor,
+      timezone: club.timezone,
+      currency: club.currency,
+    });
+  }),
+);
 
 // Browser error reporter → forwards to Sentry (if configured). Fire-and-forget.
 const clientErrorLimiter = rateLimit({ windowMs: 60_000, max: 30, key: "client-error" });

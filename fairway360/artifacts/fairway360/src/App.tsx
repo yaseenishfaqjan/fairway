@@ -19,6 +19,7 @@ import { Events } from "@/pages/events";
 import { Demo } from "@/pages/demo";
 import { PrivacyPolicy, TermsOfService } from "@/pages/legal";
 import { PortalLogin } from "@/pages/portal/login";
+import { Onboarding } from "@/pages/onboarding";
 import { ForgotPassword, ResetPassword } from "@/pages/portal/reset";
 import { CursorSpotlight, ScrollProgress } from "@/components/anim/ambient";
 import { Analytics } from "@/components/analytics";
@@ -26,6 +27,7 @@ import { installClientMonitoring } from "@/lib/client-monitoring";
 
 if (import.meta.env.PROD) installClientMonitoring();
 import { SupervisorPortal } from "@/pages/portal/supervisor";
+import { AdminPortal } from "@/pages/portal/admin";
 import { EmployeesPortal } from "@/pages/portal/employees";
 import { MembersPortal } from "@/pages/portal/members";
 
@@ -76,9 +78,13 @@ function Router() {
       <Route path="/demo" component={Demo} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
+      <Route path="/onboarding" component={Onboarding} />
       <Route path="/portal" component={PortalLogin} />
       <Route path="/portal/forgot" component={ForgotPassword} />
       <Route path="/portal/reset" component={ResetPassword} />
+      <Route path="/portal/admin">
+        <RequireRole role="super_admin" component={AdminPortal} />
+      </Route>
       <Route path="/portal/supervisor">
         <RequireRole role="supervisor" component={SupervisorPortal} />
       </Route>

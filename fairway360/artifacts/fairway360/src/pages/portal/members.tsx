@@ -18,6 +18,7 @@ import {
 import { PortalShell, type PortalNavItem, type PortalNotification } from "@/components/portal/portal-shell";
 import { MemberOrder } from "@/components/portal/member-order";
 import { ChannelChat } from "@/components/portal/channel-chat";
+import { MemberPreferences } from "@/components/portal/member-preferences";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -459,6 +460,10 @@ export function MembersPortal() {
                     </div>
                   ))}
                 </div>
+              </Glass>
+              <Glass className="p-6 lg:col-span-3">
+                <h2 className="mb-4 font-display text-lg font-semibold text-white">Dining & AI Preferences</h2>
+                <MemberPreferences />
               </Glass>
             </div>
           )}

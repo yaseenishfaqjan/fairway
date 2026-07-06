@@ -1050,7 +1050,7 @@ components:
 
     Role:
       type: string
-      enum: [supervisor, employee, member]
+      enum: [supervisor, employee, member, super_admin]
 
     LoginRequest:
       type: object
@@ -1161,7 +1161,7 @@ components:
 
     MenuCategory:
       type: string
-      enum: [Drinks, Food, Snacks]
+      enum: [Drinks, Food, Snacks, Breakfast, Lunch, Dinner, Beverages, Specials]
     MenuItem:
       type: object
       properties:

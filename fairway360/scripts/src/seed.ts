@@ -1,8 +1,10 @@
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import {
+  agentConfigs,
   announcements,
   carts,
+  chatChannels,
   clubs,
   db,
   events,
@@ -58,7 +60,38 @@ function minsAgo(label: string): Date {
 }
 const hash = (pw: string) => bcrypt.hashSync(pw, 10);
 
+// Platform HQ tenant + super admin (Fairway360 team — manages all clubs).
+// Ensured on every seed run, independent of the demo-club idempotency check.
+async function ensurePlatformHq() {
+  const HQ_SLUG = "fairway360-hq";
+  const [hqExisting] = await db.select({ id: clubs.id }).from(clubs).where(eq(clubs.slug, HQ_SLUG));
+  if (hqExisting) return;
+  const [hq] = await db
+    .insert(clubs)
+    .values({
+      name: "Fairway360 HQ",
+      slug: HQ_SLUG,
+      businessType: "platform",
+      plan: "enterprise",
+      status: "active",
+      onboardingCompleted: true,
+    })
+    .returning({ id: clubs.id });
+  await db.insert(users).values({
+    clubId: hq.id,
+    email: "super@fairway360.io",
+    passwordHash: hash(DEMO_PASSWORD),
+    role: "super_admin",
+    name: "Platform Admin",
+    initials: "PA",
+    status: "active",
+  });
+  console.log("[seed]  Platform HQ + super admin (super@fairway360.io)");
+}
+
 async function main() {
+  await ensurePlatformHq();
+
   const existing = await db
     .select({ id: clubs.id })
     .from(clubs)
@@ -498,10 +531,40 @@ async function main() {
   }
   console.log(`[seed]  ${paymentSeeds.length} member payments`);
 
+  // Department channels + AI agent configs (same defaults as the onboarding
+  // provisioning in api-server/src/lib/provision.ts).
+  const channelSeeds = [
+    { key: "general", name: "Concierge", emoji: "💬", department: "general", order: 0, member: true, desc: "General questions and member services" },
+    { key: "pro_shop", name: "Pro Shop", emoji: "🏌️", department: "pro_shop", order: 1, member: true, desc: "Tee times, gear, and lessons" },
+    { key: "kitchen", name: "F&B / Kitchen", emoji: "🍽️", department: "kitchen", order: 2, member: true, desc: "Food & beverage orders" },
+    { key: "reception", name: "Reception", emoji: "📋", department: "reception", order: 3, member: true, desc: "Bookings, guests, hours, and policies" },
+    { key: "management", name: "Management", emoji: "🛎️", department: "management", order: 4, member: false, desc: "Staff coordination (staff only)" },
+  ];
+  await db.insert(chatChannels).values(
+    channelSeeds.map((c) => ({
+      clubId, key: c.key, name: c.name, description: c.desc, emoji: c.emoji,
+      department: c.department, displayOrder: c.order, visibleToMembers: c.member,
+    })),
+  );
+  console.log(`[seed]  ${channelSeeds.length} department channels`);
+
+  const agentSeeds = [
+    { key: "kitchen", name: "Kitchen Assistant" },
+    { key: "pro_shop", name: "Pro Shop Assistant" },
+    { key: "reception", name: "Reception Assistant" },
+    { key: "general", name: "Club Concierge" },
+    { key: "management", name: "Supervisor AI" },
+  ];
+  await db.insert(agentConfigs).values(
+    agentSeeds.map((a) => ({ clubId, agentKey: a.key, name: a.name, tone: "friendly", isActive: true })),
+  );
+  console.log(`[seed]  ${agentSeeds.length} AI agent configs`);
+
   console.log("\n[seed] Done. Demo login (all roles share the same password):");
   console.log("  Supervisor : carlos@augustapines.com");
   console.log("  Employee   : maria@augustapines.com");
   console.log("  Member     : james@augustapines.com");
+  console.log("  SuperAdmin : super@fairway360.io");
   console.log(`  Password   : ${DEMO_PASSWORD}`);
 }
 

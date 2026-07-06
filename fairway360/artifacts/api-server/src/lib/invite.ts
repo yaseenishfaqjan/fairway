@@ -4,7 +4,8 @@
 
 import { randomBytes, createHash } from "node:crypto";
 import { eq } from "drizzle-orm";
-import { db, users } from "@workspace/db";
+import { db, inviteLinks, users } from "@workspace/db";
+import type { Role } from "@workspace/api-zod";
 import { sendEmail } from "./email";
 import { logger } from "./logger";
 
@@ -27,16 +28,32 @@ export async function issueInvite(
   name: string,
   email: string,
   clubName: string,
+  meta?: { clubId: string; role: Role; department?: string | null; createdBy?: string },
 ): Promise<{ link: string; emailed: boolean }> {
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   await db
     .update(users)
     .set({
       passwordResetTokenHash: tokenHash,
-      passwordResetExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      passwordResetExpiresAt: expiresAt,
     })
     .where(eq(users.id, userId));
+
+  // Registry row so supervisors can list / revoke / resend pending invites.
+  if (meta) {
+    await db.insert(inviteLinks).values({
+      clubId: meta.clubId,
+      tokenHash,
+      role: meta.role,
+      department: meta.department ?? null,
+      email,
+      name,
+      createdBy: meta.createdBy ?? null,
+      expiresAt,
+    });
+  }
 
   const base = process.env["APP_URL"] ?? "";
   const link = `${base}/portal/reset?token=${token}`;

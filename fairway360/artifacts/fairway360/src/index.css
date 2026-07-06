@@ -219,6 +219,22 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    /* Never allow the page itself to scroll sideways on mobile. */
+    overflow-x: hidden;
+  }
+
+  /* Mobile-first: honor notch / home-indicator safe areas, and stop iOS Safari
+     from zooming form fields (>=16px font-size disables the auto-zoom). */
+  @supports (padding: max(0px)) {
+    body {
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+  }
+  @media (max-width: 640px) {
+    input, select, textarea {
+      font-size: 16px;
+    }
   }
 
   h1, h2, h3, h4 {
