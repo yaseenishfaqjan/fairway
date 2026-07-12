@@ -937,7 +937,8 @@ export function SupervisorPortal() {
           <DialogHeader>
             <DialogTitle>Message {msgTarget?.name}</DialogTitle>
             <DialogDescription className="text-white/55">
-              Sends a text to their phone. Delivers once Twilio is configured.
+              Sends a direct message they'll see in their portal right away. Also
+              texts their phone if SMS is enabled.
             </DialogDescription>
           </DialogHeader>
           <Textarea
