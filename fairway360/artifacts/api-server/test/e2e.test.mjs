@@ -104,8 +104,10 @@ test("onboarding: create employee -> invite -> set password -> login", async () 
   const created = await api(cookie, "POST", "/staff", { name: "QA Hire", email, role: "employee", jobTitle: "Tester" });
   assert.equal(created.status, 201, "staff created");
   assert.ok(created.data.inviteLink.includes("/portal/reset?token="));
-  const token = lastResetToken();
-  assert.ok(token, "invite token logged");
+  // Read the token straight from the API response (race-free) rather than
+  // scraping the async server log.
+  const token = created.data.inviteLink.split("token=")[1];
+  assert.ok(token, "invite token present in response");
   assert.equal((await api("", "POST", "/auth/reset-password", { token, password: "QApass123!" })).status, 200);
   assert.equal((await login(email, "QApass123!")).status, 200, "new hire can log in");
   // duplicate email rejected
