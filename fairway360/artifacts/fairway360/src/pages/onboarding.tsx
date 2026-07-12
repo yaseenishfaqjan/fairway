@@ -33,6 +33,24 @@ const api = {
 const STEPS = ["Club", "Admin", "Team", "Menu", "Tee Sheet", "AI Agents"];
 const inputCls = "border-white/15 bg-white/5 text-white placeholder:text-white/35";
 
+// A club slug is its unique URL id. Force it into the allowed shape as the user
+// types (lowercase, digits, single hyphens) so an invalid slug can never reach
+// the server — the #1 cause of a confusing "create club" failure.
+// Live input cleaner — keeps a trailing hyphen so the user can still type
+// separators (e.g. "nick-" then "golf"). Leading hyphens and doubles are removed.
+function toSlug(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+/, "")
+    .slice(0, 60);
+}
+// Final, submit-ready slug (also trims a trailing hyphen).
+const finalizeSlug = (s: string) => s.replace(/-+$/, "");
+// Valid once it would be a legal slug after finalizing.
+const slugIsValid = (s: string) => /^[a-z0-9-]{3,60}$/.test(finalizeSlug(s)) && finalizeSlug(s).length >= 3;
+
 type Employee = { name: string; email: string; role: "employee" | "supervisor"; jobTitle: string };
 type MenuRow = { name: string; price: string; category: string };
 
@@ -47,6 +65,8 @@ export function Onboarding() {
     clubName: "", slug: "", timezone: "America/New_York", currency: "USD",
     primaryColor: "#1B3A2D", accentColor: "#C9A84C", phone: "", address: "",
   });
+  // Once the user hand-edits the slug, stop auto-deriving it from the name.
+  const [slugEdited, setSlugEdited] = useState(false);
   // Step 2 — admin account
   const [admin, setAdmin] = useState({ adminName: "", adminEmail: "", adminPassword: "" });
   // Step 3 — employees
@@ -69,21 +89,34 @@ export function Onboarding() {
     try {
       await fn();
     } catch (e) {
-      toast({ title: "Something went wrong", description: (e as Error).message, variant: "destructive" });
+      // Surface the server's own message (e.g. "That club URL is already taken")
+      // rather than a generic error, and strip the HTTP-status prefix.
+      const raw = (e as Error).message || "Please try again.";
+      const clean = raw.replace(/^HTTP \d+[^:]*:\s*/i, "");
+      toast({ title: "Couldn't continue", description: clean, variant: "destructive" });
     } finally {
       setBusy(false);
     }
   }
 
-  // Steps 1+2 → create the tenant and log in.
+  // Steps 1+2 → create the tenant and log in. On a validation error we send
+  // the user back to the field that caused it (slug/name live in step 1).
   const createClub = () =>
     run(async () => {
-      await api.post("/api/onboarding/create-club", {
-        ...club,
-        phone: club.phone || undefined,
-        address: club.address || undefined,
-        ...admin,
-      });
+      try {
+        await api.post("/api/onboarding/create-club", {
+          ...club,
+          phone: club.phone || undefined,
+          address: club.address || undefined,
+          ...admin,
+        });
+      } catch (e) {
+        const msg = (e as Error).message.toLowerCase();
+        if (msg.includes("slug") || msg.includes("club url") || msg.includes("club name")) {
+          setStep(0); // the offending field is on step 1
+        }
+        throw e;
+      }
       toast({ title: `${club.clubName} created`, description: "You're logged in as the club admin." });
       setStep(2);
     });
@@ -171,12 +204,19 @@ export function Onboarding() {
           {step === 0 && (
             <div className="space-y-3">
               <Input className={inputCls} placeholder="Club name" value={club.clubName}
-                onChange={(e) => setClub({ ...club, clubName: e.target.value, slug: club.slug || e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") })}
+                onChange={(e) => setClub({ ...club, clubName: e.target.value, slug: slugEdited ? club.slug : finalizeSlug(toSlug(e.target.value)) })}
                 data-testid="input-onboarding-club-name" />
               <div>
                 <Input className={inputCls} placeholder="club-url-slug" value={club.slug}
-                  onChange={(e) => setClub({ ...club, slug: e.target.value.toLowerCase() })} data-testid="input-onboarding-slug" />
-                <p className="mt-1 text-xs text-white/45">Your club's unique URL identifier (lowercase, hyphens).</p>
+                  onChange={(e) => { setSlugEdited(true); setClub({ ...club, slug: toSlug(e.target.value) }); }}
+                  data-testid="input-onboarding-slug" />
+                {club.slug.length > 0 && !slugIsValid(club.slug) ? (
+                  <p className="mt-1 text-xs text-amber-400">Use at least 3 characters — lowercase letters, numbers, and hyphens only.</p>
+                ) : (
+                  <p className="mt-1 text-xs text-white/45">
+                    Your club's web address{club.slug ? `: fairway360.io/${club.slug}` : " (lowercase, hyphens)"}.
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Input className={inputCls} placeholder="Timezone" value={club.timezone} onChange={(e) => setClub({ ...club, timezone: e.target.value })} />
@@ -194,7 +234,9 @@ export function Onboarding() {
               </div>
               <Input className={inputCls} placeholder="Phone (optional)" value={club.phone} onChange={(e) => setClub({ ...club, phone: e.target.value })} />
               <Input className={inputCls} placeholder="Address (optional)" value={club.address} onChange={(e) => setClub({ ...club, address: e.target.value })} />
-              <Button className="w-full" disabled={club.clubName.length < 2 || club.slug.length < 3} onClick={() => setStep(1)} data-testid="button-onboarding-next-1">
+              <Button className="w-full" disabled={club.clubName.trim().length < 2 || !slugIsValid(club.slug)}
+                onClick={() => { setClub((c) => ({ ...c, slug: finalizeSlug(c.slug) })); setStep(1); }}
+                data-testid="button-onboarding-next-1">
                 Continue <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </div>

@@ -148,12 +148,27 @@ function truncate(text: string, maxLength = 300): string {
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
-function buildErrorMessage(response: Response, data: unknown): string {
-  const prefix = `HTTP ${response.status} ${response.statusText}`;
+// A friendly, user-facing fallback when the server sends no message of its own.
+// The numeric status is always available on ApiError.status for code that needs it.
+function genericMessage(status: number): string {
+  if (status === 400) return "Please check the details and try again.";
+  if (status === 401) return "Please sign in and try again.";
+  if (status === 403) return "You don't have access to do that.";
+  if (status === 404) return "We couldn't find what you were looking for.";
+  if (status === 409) return "That conflicts with something that already exists.";
+  if (status === 429) return "Too many attempts — please wait a moment and try again.";
+  if (status >= 500) return "Something went wrong on our end. Please try again.";
+  return "That request couldn't be completed.";
+}
 
+// Human-readable error text (no "HTTP 400 Bad Request:" noise). Prefers the
+// server's own detail/title/message, falling back to a friendly generic.
+function buildErrorMessage(response: Response, data: unknown): string {
   if (typeof data === "string") {
     const text = data.trim();
-    return text ? `${prefix}: ${truncate(text)}` : prefix;
+    // Ignore raw HTML error pages (e.g. proxy 404s) — show a friendly generic.
+    if (text && !text.startsWith("<")) return truncate(text);
+    return genericMessage(response.status);
   }
 
   const title = getStringField(data, "title");
@@ -163,12 +178,12 @@ function buildErrorMessage(response: Response, data: unknown): string {
     getStringField(data, "error_description") ??
     getStringField(data, "error");
 
-  if (title && detail) return `${prefix}: ${title} — ${detail}`;
-  if (detail) return `${prefix}: ${detail}`;
-  if (message) return `${prefix}: ${message}`;
-  if (title) return `${prefix}: ${title}`;
+  if (title && detail) return `${title} — ${detail}`;
+  if (detail) return detail;
+  if (message) return message;
+  if (title) return title;
 
-  return prefix;
+  return genericMessage(response.status);
 }
 
 export class ApiError<T = unknown> extends Error {
