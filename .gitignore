@@ -29,3 +29,6 @@ backups/
 # os
 .DS_Store
 Thumbs.db
+
+# Prod env TEMPLATE (no secrets) — safe to commit
+!.env.prod.example
