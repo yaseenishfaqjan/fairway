@@ -42,27 +42,35 @@ router.get(
   "/admin/tenants",
   ...superAdmin,
   asyncHandler(async (_req, res) => {
-    const rows = await db
-      .select({
-        club: clubs,
-        memberCount: sql<number>`(select count(*) from ${members} where ${members.clubId} = ${clubs.id})`,
-        staffCount: sql<number>`(select count(*) from ${staffProfiles} where ${staffProfiles.clubId} = ${clubs.id})`,
-        lastMessageAt: sql<string | null>`(select max(${chatMessages.createdAt}) from ${chatMessages} where ${chatMessages.clubId} = ${clubs.id})`,
-      })
-      .from(clubs)
-      .orderBy(desc(clubs.createdAt));
+    // Fetch clubs plus per-club aggregates as separate grouped queries (no
+    // correlated subqueries — those were silently returning 0), then merge.
+    const [clubRows, memberCounts, staffCounts, lastMsgs] = await Promise.all([
+      db.select().from(clubs).orderBy(desc(clubs.createdAt)),
+      db.select({ clubId: members.clubId, n: count() }).from(members).groupBy(members.clubId),
+      db
+        .select({ clubId: staffProfiles.clubId, n: count() })
+        .from(staffProfiles)
+        .groupBy(staffProfiles.clubId),
+      db
+        .select({ clubId: chatMessages.clubId, at: max(chatMessages.createdAt) })
+        .from(chatMessages)
+        .groupBy(chatMessages.clubId),
+    ]);
+    const memberBy = new Map(memberCounts.map((r) => [r.clubId, Number(r.n)]));
+    const staffBy = new Map(staffCounts.map((r) => [r.clubId, Number(r.n)]));
+    const lastBy = new Map(lastMsgs.map((r) => [r.clubId, r.at]));
     res.json(
-      rows.map((r) => ({
-        id: r.club.id,
-        name: r.club.name,
-        slug: r.club.slug,
-        plan: r.club.plan,
-        status: r.club.status,
-        onboardingCompleted: r.club.onboardingCompleted,
-        memberCount: Number(r.memberCount ?? 0),
-        staffCount: Number(r.staffCount ?? 0),
-        lastActivityAt: r.lastMessageAt,
-        createdAt: r.club.createdAt.toISOString(),
+      clubRows.map((c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        plan: c.plan,
+        status: c.status,
+        onboardingCompleted: c.onboardingCompleted,
+        memberCount: memberBy.get(c.id) ?? 0,
+        staffCount: staffBy.get(c.id) ?? 0,
+        lastActivityAt: lastBy.get(c.id) ?? null,
+        createdAt: c.createdAt.toISOString(),
       })),
     );
   }),

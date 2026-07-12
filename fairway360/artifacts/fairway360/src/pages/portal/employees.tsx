@@ -152,7 +152,7 @@ export function EmployeesPortal() {
   const firstName = fullName.split(" ")[0];
   const initials =
     user?.initials ?? fullName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const clubName = user?.clubName ?? "Augusta Pines";
+  const clubName = user?.clubName ?? "your club";
 
   const openTasks = tasks.filter((t) => !t.done).length;
   const activeOrders = orders.filter((o) => o.status !== "Delivered").length;
@@ -296,7 +296,7 @@ export function EmployeesPortal() {
               {/* Welcome banner with photo + clock controls */}
               <Glass className="relative overflow-hidden p-0">
                 <div className="absolute inset-0">
-                  <img src={clubhouseHero} alt="Augusta Pines clubhouse at sunset" decoding="async" fetchPriority="high" className="h-full w-full object-cover" />
+                  <img src={clubhouseHero} alt="Clubhouse at sunset" decoding="async" fetchPriority="high" className="h-full w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-r from-[#04130c] via-[#04130c]/85 to-[#04130c]/40" />
                 </div>
                 <div className="relative flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">

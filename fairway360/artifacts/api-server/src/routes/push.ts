@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db, deviceTokens } from "@workspace/db";
 import { requireAuth } from "../middleware/auth";
 import { asyncHandler, badRequest } from "../lib/http";
@@ -64,8 +64,20 @@ router.post(
   "/me/push/unsubscribe",
   requireAuth,
   asyncHandler(async (req, res) => {
+    const { userId, clubId } = req.auth!;
     const { token } = (req.body ?? {}) as { token?: string };
-    if (token) await db.delete(deviceTokens).where(eq(deviceTokens.token, token));
+    // Only ever remove the caller's own registration for this token — never a
+    // token that happens to belong to another user/club.
+    if (token)
+      await db
+        .delete(deviceTokens)
+        .where(
+          and(
+            eq(deviceTokens.token, token),
+            eq(deviceTokens.userId, userId),
+            eq(deviceTokens.clubId, clubId),
+          ),
+        );
     res.json({ ok: true });
   }),
 );

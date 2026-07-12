@@ -96,6 +96,7 @@ export function MembersPortal() {
   const nextTee = upcoming[0];
   const fullName = account?.name ?? user?.name ?? "Member";
   const firstName = fullName.split(" ")[0];
+  const clubName = user?.clubName ?? "your club";
   const initials = user?.initials ?? fullName.split(" ").map((w) => w[0]).join("").slice(0, 2);
   const balance = account?.balance ?? 0;
 
@@ -236,7 +237,7 @@ export function MembersPortal() {
                 <div className="grid lg:grid-cols-2">
                   <div className="relative z-10 order-2 p-7 sm:p-9 lg:order-1">
                     <p className="text-lg font-medium text-white/65">Welcome to</p>
-                    <h1 className="mt-0.5 font-display text-4xl font-semibold leading-[1.02] text-white sm:text-5xl">Augusta Pines</h1>
+                    <h1 className="mt-0.5 font-display text-4xl font-semibold leading-[1.02] text-white sm:text-5xl">{clubName}</h1>
                     <div className="mt-4 h-1 w-16 rounded-full bg-accent" />
                     <p className="mt-4 text-base text-white/70">Your home for everything club.</p>
 
@@ -256,7 +257,7 @@ export function MembersPortal() {
 
                   {/* Photo */}
                   <div className="relative order-1 min-h-[220px] lg:order-2 lg:min-h-full">
-                    <img src={clubhouseHero} alt="Augusta Pines clubhouse at sunset" decoding="async" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover" />
+                    <img src={clubhouseHero} alt="Clubhouse at sunset" decoding="async" fetchPriority="high" className="absolute inset-0 h-full w-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#04130c] via-[#04130c]/40 to-transparent lg:bg-gradient-to-l lg:via-[#04130c]/20" />
                   </div>
                 </div>

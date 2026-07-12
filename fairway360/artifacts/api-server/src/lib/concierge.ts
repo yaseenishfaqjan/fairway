@@ -89,7 +89,9 @@ async function buildMemberContext(auth: ConciergeAuth): Promise<string> {
     ? await db
         .select()
         .from(orderLines)
-        .where(inArray(orderLines.orderId, orderIds))
+        // orderIds are already club+member scoped above; also constrain clubId
+        // for defense-in-depth (consistent with lib/orders.ts).
+        .where(and(eq(orderLines.clubId, clubId), inArray(orderLines.orderId, orderIds)))
     : [];
   const linesByOrder = new Map<string, typeof lines>();
   for (const l of lines) {

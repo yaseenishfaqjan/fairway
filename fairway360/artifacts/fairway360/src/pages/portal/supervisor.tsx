@@ -194,7 +194,7 @@ export function SupervisorPortal() {
   const firstName = fullName.split(" ")[0];
   const initials =
     user?.initials ?? fullName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
-  const clubName = user?.clubName ?? "Augusta Pines";
+  const clubName = user?.clubName ?? "your club";
 
   function go(s: SectionKey) {
     setSection(s);

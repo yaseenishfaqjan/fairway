@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Link } from "wouter";
+import { customFetch } from "@workspace/api-client-react";
 import {
   LayoutDashboard,
   HardHat,
@@ -30,6 +31,14 @@ export function PortalLogin() {
   const [pending, setPending] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // When reached via a club's own subdomain/slug, show that club's name.
+  // Otherwise this is the shared portal entry, so stay brand-neutral.
+  const [clubName, setClubName] = useState<string | null>(null);
+  useEffect(() => {
+    customFetch<{ name: string }>("/api/public/club-info", { credentials: "include" })
+      .then((c) => setClubName(c?.name ?? null))
+      .catch(() => setClubName(null));
+  }, []);
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
@@ -106,8 +115,10 @@ export function PortalLogin() {
         <div className="text-center mb-10">
           <PortalLogo size="lg" className="mx-auto mb-6" />
           <p className="eyebrow text-accent mb-3">Club Portal</p>
-          <h1 className="text-3xl md:text-4xl font-semibold mb-3">Welcome to Augusta Pines</h1>
-          <p className="text-white/60 max-w-md mx-auto">Choose your portal to continue. This is an interactive demo with sample data.</p>
+          <h1 className="text-3xl md:text-4xl font-semibold mb-3">
+            {clubName ? `Welcome to ${clubName}` : "Welcome to your club portal"}
+          </h1>
+          <p className="text-white/60 max-w-md mx-auto">Choose your portal to continue, or sign in with your club account below.</p>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-3">
