@@ -200,6 +200,12 @@ export async function loadSemanticMemory(clubId: string): Promise<SemanticMemory
   };
 }
 
+/** The club's IANA timezone (defaults to America/New_York). */
+export async function timezoneForClub(clubId: string): Promise<string> {
+  const [c] = await db.select({ tz: clubs.timezone }).from(clubs).where(eq(clubs.id, clubId));
+  return c?.tz ?? "America/New_York";
+}
+
 /** The club's config for one agent, or null when unconfigured (defaults apply). */
 export async function getAgentConfig(
   clubId: string,

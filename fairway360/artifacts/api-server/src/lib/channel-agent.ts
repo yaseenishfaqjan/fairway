@@ -8,6 +8,7 @@
 import { llmEnabled, llmComplete, llmCompleteWithTools, type LlmTool } from "./llm";
 import { buildAgentSystemPrompt, type WorkingMemory, workingMemory } from "./memory";
 import { placeAgentOrder, type OrderRequestItem } from "./agent-order";
+import { bookAgentTeeTime } from "./agent-booking";
 import type { AgentConfig } from "@workspace/db";
 
 const DEPT_PROMPT: Record<string, string> = {
@@ -24,7 +25,13 @@ const DEPT_PROMPT: Record<string, string> = {
   pro_shop:
     "You are the Pro Shop AI assistant at a golf club. Help with equipment rentals, lessons with the Head Pro, and merchandise. Only reference real offerings; do not invent stock. Be golf-knowledgeable and concise.",
   reception:
-    "You are the Reception AI assistant at a golf club. Help with tee-time bookings, guest registration, club hours, dress code, and general policies. Only offer tee times listed in TEE AVAILABILITY — never invent slots. Organized and welcoming, concise.",
+    "You are the Reception AI assistant at a golf club. You can BOOK tee times.\n" +
+    "STRICT RULES:\n" +
+    "1. Only offer tee times listed in TEE AVAILABILITY — never invent slots or times.\n" +
+    "2. To actually book, you MUST call the book_tee_time function. Never say a tee time is booked unless you called it.\n" +
+    "3. Flow: confirm the date, time, and number of players once; as soon as the member says yes/confirm, call book_tee_time.\n" +
+    "4. Also help with guest registration, club hours, dress code, and policies.\n" +
+    "Organized and welcoming, concise.",
   general:
     "You are the Fairway360 club concierge — first point of contact for members. Answer general questions and point members to the right place (Book for tee times, Order for food, Events, Account). Warm and concise.",
   management: "You are the club Supervisor AI coordinating staff. Be brief and operational.",
@@ -97,6 +104,29 @@ function confirmationLine(
   return `✅ Order confirmed, ${first}! ${items}${loc} — about ${r.etaMinutes} minutes. Order #${r.orderNumber}. The kitchen has it now.`;
 }
 
+// The tool the Reception agent uses to create a real tee-time booking.
+const BOOK_TEE_TIME_TOOL: LlmTool = {
+  name: "book_tee_time",
+  description:
+    "Book a tee time for the member. Call ONLY after the member has confirmed the date, time, and number of players.",
+  parameters: {
+    type: "object",
+    properties: {
+      date: { type: "string", description: "Date as YYYY-MM-DD" },
+      time: { type: "string", description: "Start time as 24-hour HH:MM, e.g. 09:00" },
+      players: { type: "integer", minimum: 1, maximum: 8 },
+    },
+    required: ["date", "time", "players"],
+  },
+};
+
+function bookingLine(
+  first: string,
+  r: Extract<Awaited<ReturnType<typeof bookAgentTeeTime>>, { ok: true }>,
+): string {
+  return `✅ Booked, ${first}! Tee time for ${r.players} ${r.players === 1 ? "player" : "players"} on ${r.whenLabel}. Confirmation #${r.reference}. See you on the first tee!`;
+}
+
 export async function channelAgentReply(opts: {
   clubId: string;
   department: string | null | undefined;
@@ -154,6 +184,32 @@ export async function channelAgentReply(opts: {
       }
       // Couldn't match items — ask the member to clarify (don't pretend it worked).
       return `Sorry ${first}, ${placed.reason} Could you tell me the exact item from our menu and I'll get it ordered right away?`;
+    }
+    if (result?.kind === "text") return result.text;
+    return fallback;
+  }
+
+  // Reception agent can book real tee times via a tool call.
+  if (dept === "reception" && opts.memberUserId) {
+    const result = await llmCompleteWithTools({
+      system,
+      user: userMsg,
+      tools: [BOOK_TEE_TIME_TOOL],
+      maxTokens: 350,
+    });
+    if (result?.kind === "tool" && result.name === "book_tee_time") {
+      const date = typeof result.args.date === "string" ? result.args.date : "";
+      const time = typeof result.args.time === "string" ? result.args.time : "";
+      const players = Number(result.args.players ?? 1);
+      const booked = await bookAgentTeeTime({
+        clubId: opts.clubId,
+        memberUserId: opts.memberUserId,
+        date,
+        time,
+        players,
+      });
+      if (booked.ok) return bookingLine(first, booked);
+      return `Sorry ${first}, ${booked.reason} Would you like me to check other available times?`;
     }
     if (result?.kind === "text") return result.text;
     return fallback;
