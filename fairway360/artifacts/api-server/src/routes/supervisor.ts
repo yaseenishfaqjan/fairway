@@ -61,6 +61,7 @@ import {
   toBooking,
   toAnnouncement,
 } from "../lib/serializers";
+import { timezoneForClub } from "../lib/memory";
 
 const router: IRouter = Router();
 const supervisor = [requireAuth, requireRole("supervisor")];
@@ -386,7 +387,8 @@ router.get(
       .innerJoin(users, eq(members.userId, users.id))
       .where(and(eq(teeTimes.clubId, clubId), isNotNull(teeTimes.memberId)))
       .orderBy(asc(teeTimes.startsAt));
-    res.json(rows.map((r) => toBooking(r.tee, r.name)));
+    const tz = await timezoneForClub(clubId);
+    res.json(rows.map((r) => toBooking(r.tee, r.name, tz)));
   }),
 );
 
@@ -408,7 +410,8 @@ router.patch(
       .from(members)
       .innerJoin(users, eq(members.userId, users.id))
       .where(eq(members.id, row.memberId!));
-    res.json(toBooking(row, m?.name ?? "Member"));
+    const tz = await timezoneForClub(clubId);
+    res.json(toBooking(row, m?.name ?? "Member", tz));
   }),
 );
 

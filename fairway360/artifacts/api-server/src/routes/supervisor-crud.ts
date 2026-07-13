@@ -35,6 +35,8 @@ import { issueInvite } from "../lib/invite";
 import { notifyMany } from "../lib/notify";
 import { sendSms } from "../lib/sms";
 import { DEFAULT_AGENTS } from "../lib/provision";
+import { timezoneForClub } from "../lib/memory";
+import { zonedTime, fmtTimeTz } from "../lib/tz";
 
 const router: IRouter = Router();
 const supervisor = [requireAuth, requireRole("supervisor")];
@@ -595,13 +597,12 @@ router.post(
   asyncHandler(async (req, res) => {
     const { clubId } = req.auth!;
     const body = GenerateTeeSheetBody.parse(req.body);
-    const [oh, om] = body.openTime.split(":").map(Number);
-    const [ch, cm] = body.closeTime.split(":").map(Number);
-    const start = new Date(`${body.date}T00:00:00`);
-    const open = new Date(start);
-    open.setHours(oh, om, 0, 0);
-    const close = new Date(start);
-    close.setHours(ch, cm, 0, 0);
+    // Build the day + open/close instants in the CLUB's timezone so a club in
+    // any US timezone gets slots at the right local wall-clock time.
+    const tz = await timezoneForClub(clubId);
+    const start = zonedTime(body.date, "00:00", tz)!;
+    const open = zonedTime(body.date, body.openTime, tz)!;
+    const close = zonedTime(body.date, body.closeTime, tz)!;
     if (close <= open) throw badRequest("closeTime must be after openTime.");
 
     // Skip times that already have a slot (idempotent regeneration).
@@ -638,7 +639,8 @@ router.get(
     const { clubId } = req.auth!;
     const date = typeof req.query.date === "string" ? req.query.date : null;
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw badRequest("date=YYYY-MM-DD required.");
-    const start = new Date(`${date}T00:00:00`);
+    const tz = await timezoneForClub(clubId);
+    const start = zonedTime(date, "00:00", tz)!;
     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
     const rows = await db
       .select({ tee: teeTimes, name: users.name })
@@ -651,6 +653,8 @@ router.get(
       rows.map((r) => ({
         id: r.tee.id,
         startsAt: r.tee.startsAt.toISOString(),
+        // Server-formatted in the club's timezone so the grid shows local time.
+        time: fmtTimeTz(r.tee.startsAt, tz),
         players: r.tee.players,
         maxPlayers: r.tee.maxPlayers,
         status: r.tee.status,
@@ -696,8 +700,9 @@ router.post(
   asyncHandler(async (req, res) => {
     const { clubId } = req.auth!;
     const body = BlockRangeBody.parse(req.body);
-    const rangeStart = new Date(`${body.startDate}T00:00:00`);
-    const rangeEnd = new Date(`${body.endDate}T23:59:59`);
+    const tz = await timezoneForClub(clubId);
+    const rangeStart = zonedTime(body.startDate, "00:00", tz)!;
+    const rangeEnd = new Date((zonedTime(body.endDate, "00:00", tz)!).getTime() + 24 * 3600_000);
     if (rangeEnd < rangeStart) throw badRequest("endDate before startDate.");
 
     // Only open (unbooked) slots inside the daily time window are blocked.
@@ -716,9 +721,14 @@ router.post(
     const [eh, em] = body.endTime.split(":").map(Number);
     const winStart = (sh ?? 0) * 60 + (sm ?? 0);
     const winEnd = (eh ?? 0) * 60 + (em ?? 0);
+    // Compare each slot's wall-clock minute-of-day IN THE CLUB TZ.
+    const hmFmt = new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false });
     const ids = slots
       .filter((s) => {
-        const mins = s.startsAt.getHours() * 60 + s.startsAt.getMinutes();
+        const parts = hmFmt.formatToParts(s.startsAt);
+        const hh = Number(parts.find((p) => p.type === "hour")?.value) % 24;
+        const mm = Number(parts.find((p) => p.type === "minute")?.value);
+        const mins = hh * 60 + mm;
         return mins >= winStart && mins < winEnd;
       })
       .map((s) => s.id);

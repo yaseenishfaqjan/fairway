@@ -5,6 +5,8 @@
 import { and, asc, eq, gte, isNull, lt } from "drizzle-orm";
 import { db, members, teeTimes } from "@workspace/db";
 import { logger } from "./logger";
+import { timezoneForClub } from "./memory";
+import { zonedTime } from "./tz";
 
 export type BookingResult =
   | {
@@ -35,15 +37,6 @@ function whenLabel(date: string, time: string): string {
   return `${day} at ${h}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-function parseRequested(date: string, time: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{1,2}:\d{2}$/.test(time)) return null;
-  const d = new Date(`${date}T00:00:00`);
-  const [h, m] = time.split(":").map(Number);
-  if (Number.isNaN(h) || Number.isNaN(m)) return null;
-  d.setHours(h, m, 0, 0);
-  return d;
-}
-
 export async function bookAgentTeeTime(opts: {
   clubId: string;
   memberUserId: string;
@@ -52,7 +45,9 @@ export async function bookAgentTeeTime(opts: {
   players: number;
 }): Promise<BookingResult> {
   try {
-    const want = parseRequested(opts.date, opts.time);
+    // Interpret the requested time in the CLUB's timezone (USA multi-state).
+    const tz = await timezoneForClub(opts.clubId);
+    const want = zonedTime(opts.date, opts.time, tz);
     if (!want) return { ok: false, reason: "I couldn't understand that date/time." };
     if (want.getTime() < Date.now() - 60 * 60 * 1000) {
       return { ok: false, reason: "That time is in the past — please pick an upcoming time." };
@@ -65,10 +60,9 @@ export async function bookAgentTeeTime(opts: {
       .where(and(eq(members.clubId, opts.clubId), eq(members.userId, opts.memberUserId)));
     if (!member) return { ok: false, reason: "Member profile not found." };
 
-    // Look for an OPEN slot (unbooked, pending) on the requested day, and pick
-    // the one closest to the requested time with room for the group.
-    const dayStart = new Date(want);
-    dayStart.setHours(0, 0, 0, 0);
+    // Look for an OPEN slot (unbooked, pending) on the requested day (club-tz
+    // day boundaries), and pick the one closest to the requested time.
+    const dayStart = zonedTime(opts.date, "00:00", tz) ?? new Date(want.getTime() - 12 * 3600_000);
     const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
     const open = await db
       .select()

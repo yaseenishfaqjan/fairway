@@ -46,7 +46,7 @@ type MenuItem = {
   allergens: string[]; dietaryFlags: string[]; prepTimeMinutes: number; available: boolean;
 };
 type TeeSlot = {
-  id: string; startsAt: string; players: number; maxPlayers: number;
+  id: string; startsAt: string; time: string; players: number; maxPlayers: number;
   status: string; notes: string | null; bookedBy: string | null;
 };
 type KbEntry = { id: string; category: string; title: string; content: string; isActive: boolean };
@@ -288,7 +288,7 @@ function TeeTab() {
         {slots.map((s) => (
           <div key={s.id} className={cn("rounded-xl border p-3", tone[s.status] ?? tone.pending)} data-testid={`tee-slot-${s.id}`}>
             <div className="text-sm font-semibold">
-              {new Date(s.startsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+              {s.time ?? new Date(s.startsAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
             </div>
             <div className="text-xs opacity-80">
               {s.bookedBy ? `${s.bookedBy} · ${s.players}p` : s.status === "blocked" ? (s.notes ?? "Blocked") : `open · ${s.maxPlayers - s.players} spots`}

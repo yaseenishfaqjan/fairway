@@ -49,6 +49,10 @@ import {
   fmtTime,
   teeTimeStatusLabel,
 } from "./format";
+import { fmtDateShortTz, fmtTimeTz } from "./tz";
+
+// Default club timezone when a caller doesn't pass one (US Eastern).
+const DEFAULT_TZ = "America/New_York";
 
 const num = (v: string | null | undefined): number => (v == null ? 0 : Number(v));
 
@@ -127,23 +131,31 @@ export function toLead(l: DbLead): Lead {
   };
 }
 
-export function toTeeTime(t: DbTeeTime, memberName?: string | null): TeeTime {
+export function toTeeTime(
+  t: DbTeeTime,
+  memberName?: string | null,
+  tz: string = DEFAULT_TZ,
+): TeeTime {
   return {
     id: t.id,
     member: memberName ?? undefined,
-    time: fmtTime(t.startsAt),
-    date: fmtDateShort(t.startsAt),
+    time: fmtTimeTz(t.startsAt, tz),
+    date: fmtDateShortTz(t.startsAt, tz),
     players: t.players,
     holes: t.holes,
     status: teeTimeStatusLabel(t.status),
   };
 }
 
-export function toBooking(t: DbTeeTime, memberName: string): Booking {
+export function toBooking(
+  t: DbTeeTime,
+  memberName: string,
+  tz: string = DEFAULT_TZ,
+): Booking {
   return {
     id: t.id,
     member: memberName,
-    time: fmtTime(t.startsAt),
+    time: fmtTimeTz(t.startsAt, tz),
     players: t.players,
     holes: t.holes,
     status: teeTimeStatusLabel(t.status),

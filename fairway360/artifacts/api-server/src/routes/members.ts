@@ -38,6 +38,7 @@ import {
   toTeeTime,
   teeTimeUpcoming,
 } from "../lib/serializers";
+import { timezoneForClub } from "../lib/memory";
 
 const router: IRouter = Router();
 const member = [requireAuth, requireRole("member")];
@@ -287,7 +288,8 @@ router.get(
         .from(teeTimes)
         .where(and(eq(teeTimes.clubId, clubId), isNull(teeTimes.memberId)))
         .orderBy(asc(teeTimes.startsAt));
-      res.json(rows.map((t) => toTeeTime(t)));
+      const tz = await timezoneForClub(clubId);
+      res.json(rows.map((t) => toTeeTime(t, undefined, tz)));
       return;
     }
 
@@ -298,7 +300,8 @@ router.get(
       .leftJoin(users, eq(members.userId, users.id))
       .where(eq(teeTimes.clubId, clubId))
       .orderBy(asc(teeTimes.startsAt));
-    res.json(rows.map((r) => toTeeTime(r.tee, r.memberName)));
+    const tz = await timezoneForClub(clubId);
+    res.json(rows.map((r) => toTeeTime(r.tee, r.memberName, tz)));
   }),
 );
 
@@ -327,7 +330,8 @@ router.post(
       .from(users)
       .where(eq(users.id, req.auth!.userId));
 
-    res.status(201).json(toTeeTime(row, me?.name));
+    const tz = await timezoneForClub(clubId);
+    res.status(201).json(toTeeTime(row, me?.name, tz));
   }),
 );
 
@@ -346,7 +350,8 @@ router.get(
       .from(teeTimes)
       .where(and(eq(teeTimes.clubId, clubId), eq(teeTimes.memberId, memberId)))
       .orderBy(asc(teeTimes.startsAt));
-    res.json(rows.map((t) => toTeeTime(t, me?.name)));
+    const tz = await timezoneForClub(clubId);
+    res.json(rows.map((t) => toTeeTime(t, me?.name, tz)));
   }),
 );
 
