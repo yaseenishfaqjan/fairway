@@ -117,3 +117,85 @@ export async function llmComplete(opts: {
   }
   return null;
 }
+
+// ── Tool calling (function calling) ─────────────────────────────────────────
+// Used by the Kitchen agent to actually place orders. Currently implemented
+// for OpenAI (the primary provider). If OpenAI isn't the active provider or the
+// call fails, returns { kind: "text" } from llmComplete so the chat still works.
+
+export type LlmTool = {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>; // JSON Schema
+};
+
+export type LlmToolResult =
+  | { kind: "text"; text: string }
+  | { kind: "tool"; name: string; args: Record<string, unknown> };
+
+export async function llmCompleteWithTools(opts: {
+  system: string;
+  user: string;
+  tools: LlmTool[];
+  maxTokens?: number;
+  model?: string;
+}): Promise<LlmToolResult | null> {
+  const openaiKey = process.env["OPENAI_API_KEY"];
+  const max = opts.maxTokens ?? 400;
+
+  // Tool calling path — OpenAI only.
+  if (openaiKey && providerOrder().includes("openai")) {
+    try {
+      // Transactional flows (taking orders) use a stronger default model for
+      // reliable tool calling; override with ORDER_MODEL.
+      const model = opts.model ?? process.env["ORDER_MODEL"] ?? "gpt-4o";
+      const res = await fetch(OPENAI_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization: `Bearer ${openaiKey}` },
+        body: JSON.stringify({
+          model,
+          max_tokens: max,
+          messages: [
+            { role: "system", content: opts.system },
+            { role: "user", content: opts.user },
+          ],
+          tools: opts.tools.map((t) => ({
+            type: "function",
+            function: { name: t.name, description: t.description, parameters: t.parameters },
+          })),
+          tool_choice: "auto",
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as {
+          choices?: {
+            message?: {
+              content?: string;
+              tool_calls?: { function?: { name?: string; arguments?: string } }[];
+            };
+          }[];
+        };
+        const msg = data.choices?.[0]?.message;
+        const call = msg?.tool_calls?.[0]?.function;
+        if (call?.name) {
+          let args: Record<string, unknown> = {};
+          try {
+            args = JSON.parse(call.arguments ?? "{}");
+          } catch {
+            /* leave empty */
+          }
+          return { kind: "tool", name: call.name, args };
+        }
+        if (msg?.content?.trim()) return { kind: "text", text: msg.content.trim() };
+      } else {
+        logger.error({ status: res.status }, "llm: openai tool-call error");
+      }
+    } catch (err) {
+      logger.error({ err }, "llm: tool-call request failed");
+    }
+  }
+
+  // Fallback: plain text (no tools) via the normal provider chain.
+  const text = await llmComplete({ system: opts.system, user: opts.user, maxTokens: max });
+  return text ? { kind: "text", text } : null;
+}

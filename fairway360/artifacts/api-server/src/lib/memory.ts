@@ -265,7 +265,8 @@ export async function buildAgentSystemPrompt(opts: {
         .map((f) => `${f.name} (${f.orderedCount}x)`)
         .join(", ")} — offer their usual first`;
     }
-    if (episodic.usualTable) prompt += `\n- Usual table/location: ${episodic.usualTable}`;
+    if (episodic.usualTable)
+      prompt += `\n- Usual table (fallback ONLY if the member doesn't state a location this conversation): ${episodic.usualTable}`;
     if (episodic.communicationStyle)
       prompt += `\n- Communication style: ${episodic.communicationStyle}`;
     if (episodic.vipNotes) prompt += `\n- VIP NOTES (supervisor-added): ${episodic.vipNotes}`;
