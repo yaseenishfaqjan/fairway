@@ -10,23 +10,52 @@ const OPTIONS = [
   { value: "offline", label: "Appear Offline", dot: "bg-white/30" },
 ] as const;
 
+const STORAGE_KEY = "fairway360.presence";
+// Only "available" means a human is actively covering member chats; every other
+// status hands member conversations to the AI agents.
+const VALID = new Set(OPTIONS.map((o) => o.value));
+
+function initialStatus(): string {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved && VALID.has(saved as never)) return saved;
+  } catch {
+    /* localStorage unavailable */
+  }
+  return "available";
+}
+
 /**
- * Staff presence selector (sidebar). Defaults to "available" on mount so an
- * open staff portal means humans are covering; switching to away/offline/DND
- * lets the AI agents take over member conversations.
+ * Staff presence selector (sidebar). The chosen status PERSISTS across page
+ * navigations and reloads (localStorage) — it is no longer forced back to
+ * "available" on every mount. A heartbeat keeps the status fresh so it doesn't
+ * go stale (the server treats presence older than a few minutes as offline).
  */
 export function PresenceControl() {
   const update = useUpdatePresence();
-  const [status, setStatus] = useState<string>("available");
+  const [status, setStatus] = useState<string>(initialStatus);
   const set = useRef(update);
   set.current = update;
+  const statusRef = useRef(status);
+  statusRef.current = status;
 
+  // Push the current (persisted) status on mount, then heartbeat every 60s so
+  // an open portal keeps the staffer's real status live.
   useEffect(() => {
-    set.current.mutate({ data: { status: "available" } });
+    set.current.mutate({ data: { status: statusRef.current as never } });
+    const id = setInterval(() => {
+      set.current.mutate({ data: { status: statusRef.current as never } });
+    }, 60_000);
+    return () => clearInterval(id);
   }, []);
 
   function change(v: string) {
     setStatus(v);
+    try {
+      localStorage.setItem(STORAGE_KEY, v);
+    } catch {
+      /* ignore */
+    }
     update.mutate({ data: { status: v as never } });
   }
 
