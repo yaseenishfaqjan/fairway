@@ -1,0 +1,52 @@
+# Side-by-side deploy of the NEW Fairway360 on its own DB + network, for
+# app.fairway360.io, behind an existing shared reverse proxy (no Caddy here).
+# Distinct container/network/volume names so it never clashes with an older
+# fairway360 stack running on the same host. See deploy-app.sh.
+services:
+  db:
+    image: postgres:16
+    container_name: fairway-v2-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fairway
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: fairway360
+    volumes:
+      - fairwayv2_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fairway -d fairway360"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: fairway360:v2
+    container_name: fairway-v2-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      DATABASE_URL: postgres://fairway:${DB_PASSWORD}@db:5432/fairway360
+      SESSION_SECRET: ${SESSION_SECRET}
+      APP_URL: https://${DOMAIN}
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      ORDER_MODEL: ${ORDER_MODEL:-gpt-4o}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CONCIERGE_MODEL: ${CONCIERGE_MODEL:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      SALES_NOTIFY_EMAIL: ${SALES_NOTIFY_EMAIL:-}
+    expose:
+      - "5000"
+
+volumes:
+  fairwayv2_pgdata:
+
+networks:
+  default:
+    name: fairwayv2net
