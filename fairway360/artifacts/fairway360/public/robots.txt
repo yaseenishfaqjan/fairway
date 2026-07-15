@@ -2,16 +2,19 @@
 User-agent: *
 Allow: /
 Disallow: /portal
+Disallow: /onboarding
 Disallow: /api/
 
 # AI crawlers — allow public pages, keep the gated portal out
 User-agent: GPTBot
 Allow: /
 Disallow: /portal
+Disallow: /onboarding
 
 User-agent: ClaudeBot
 Allow: /
 Disallow: /portal
+Disallow: /onboarding
 
 User-agent: PerplexityBot
 Allow: /

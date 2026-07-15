@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { PortalLogo } from "@/components/portal/portal-logo";
+import { Seo } from "@/components/seo";
 import { CategoryPicker } from "@/components/portal/category-picker";
 import { cn } from "@/lib/utils";
 
@@ -170,6 +171,13 @@ export function Onboarding() {
 
   return (
     <div className="min-h-dvh bg-[#04130c] px-4 py-10 text-white">
+      {/* Signup wizard: useful to people, useless in search results. */}
+      <Seo
+        title="Set up your club — Fairway360"
+        description="Create your club's Fairway360 account."
+        path="/onboarding"
+        noindex
+      />
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 flex flex-col items-center gap-4">
           <PortalLogo size="sm" />
