@@ -2,19 +2,27 @@
 
 User-agent: *
 Allow: /
+Disallow: /portal
+Disallow: /onboarding
 
 User-agent: GPTBot
 Allow: /
+Disallow: /portal
+Disallow: /onboarding
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /portal
+Disallow: /onboarding
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /portal
+Disallow: /onboarding
 
 Preferred-format: /llms.txt
 Sitemap: https://fairway360.io/sitemap.xml
 Organization: Fairway360
-Contact: hello@fairway360.io
-Description: AI-powered club operation system for golf courses and country clubs
+Contact: info@fairway360.io
+Description: AI operating system for US golf courses and country clubs. Members book tee times and order on-course food by chat; the AI creates the real booking and order against the club's own tee sheet and menu, and stands down when staff are available.
 Pricing: $497-$1,997/month
