@@ -152,13 +152,14 @@ export function PortalShell({
   active,
   onSelect,
   user,
+  notifications,
   showPresence = false,
   children,
 }: PortalShellProps) {
   const [open, setOpen] = useState(false);
   const [, setLocation] = useLocation();
   const { items: notifs, unread, markRead } = useNotifications();
-  const bellItems: PortalNotification[] = notifs.map((n) => ({
+  const feedItems: PortalNotification[] = notifs.map((n) => ({
     id: n.id,
     title: n.title,
     detail: n.body ?? undefined,
@@ -168,6 +169,12 @@ export function PortalShell({
       if (n.link) setLocation(n.link);
     },
   }));
+  // The bell shows the server notification feed PLUS anything the portal hands
+  // us. Supervisor→staff messages live in their own table and never reach
+  // /api/me/notifications, so without the prop they'd be invisible here while
+  // still counting in the portal's own "unread messages" tile.
+  const bellItems: PortalNotification[] = [...(notifications ?? []), ...feedItems];
+  const bellUnread = unread + (notifications?.length ?? 0);
 
   function pick(key: string) {
     onSelect(key);
@@ -181,7 +188,7 @@ export function PortalShell({
           <Link href="/" className="flex items-center" data-testid="link-portal-home">
             <PortalLogo size="sm" />
           </Link>
-          <NotificationBell items={bellItems} unread={unread} align="left" />
+          <NotificationBell items={bellItems} unread={bellUnread} align="left" />
         </div>
         <div className="px-5 pb-5 pt-1">
           <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent/90">
@@ -311,7 +318,7 @@ export function PortalShell({
         </button>
         <PortalLogo size="sm" />
         <div className="flex items-center gap-1">
-          <NotificationBell items={bellItems} unread={unread} align="right" />
+          <NotificationBell items={bellItems} unread={bellUnread} align="right" />
           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-sm font-bold text-accent-foreground">
             {user.initials}
           </div>
