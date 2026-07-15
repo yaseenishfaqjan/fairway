@@ -16,6 +16,7 @@ import { Seo } from "@/components/seo";
 import { PortalLogo } from "@/components/portal/portal-logo";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const ROLE_HOME: Record<string, string> = {
   supervisor: "/portal/supervisor",
@@ -31,6 +32,8 @@ export function PortalLogin() {
   const [pending, setPending] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  // The sample-data demo is opt-in so real club staff aren't sent into it.
+  const [showDemo, setShowDemo] = useState(false);
   // When reached via a club's own subdomain/slug, show that club's name.
   // Otherwise this is the shared portal entry, so stay brand-neutral.
   const [clubName, setClubName] = useState<string | null>(null);
@@ -111,52 +114,19 @@ export function PortalLogin() {
     <div className="min-h-dvh flex flex-col items-center justify-center bg-[hsl(146_46%_17%)] px-4 py-16 text-white">
       <Seo title="Log In | Fairway360" description="Log in to your Fairway360 golf club management dashboard." path="/portal" noindex />
       <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_top,_white,_transparent_60%)] pointer-events-none" />
-      <div className="relative z-10 w-full max-w-5xl">
-        <div className="text-center mb-10">
+      <div className="relative z-10 w-full max-w-md">
+        <div className="text-center mb-8">
           <PortalLogo size="lg" className="mx-auto mb-6" />
           <p className="eyebrow text-accent mb-3">Club Portal</p>
           <h1 className="text-3xl md:text-4xl font-semibold mb-3">
-            {clubName ? `Welcome to ${clubName}` : "Welcome to your club portal"}
+            {clubName ? `Welcome to ${clubName}` : "Sign in to your club"}
           </h1>
-          <p className="text-white/60 max-w-md mx-auto">Choose your portal to continue, or sign in with your club account below.</p>
+          <p className="text-white/60">Use the email and password for your club account.</p>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-3">
-          {portals.map((p) => (
-            <button
-              key={p.href}
-              type="button"
-              onClick={() => enter(p)}
-              disabled={pending !== null}
-              data-testid={p.testid}
-              className="block w-full text-left disabled:cursor-wait"
-            >
-              <Card className="group h-full cursor-pointer border-white/10 bg-white/[0.05] p-6 text-white transition-all hover:-translate-y-1 hover:border-accent/50 hover:bg-white/[0.08]">
-                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent/20 text-accent">
-                  <p.icon className="h-6 w-6" />
-                </div>
-                <h2 className="font-display text-xl font-semibold mb-2">{p.title}</h2>
-                <p className="text-sm text-white/60 mb-5 leading-relaxed">{p.desc}</p>
-                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-accent">
-                  {pending === p.href ? (
-                    <>
-                      Signing in
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </>
-                  ) : (
-                    <>
-                      {p.cta}
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </>
-                  )}
-                </span>
-              </Card>
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={signIn} className="mx-auto mt-10 w-full max-w-sm space-y-3 rounded-2xl border border-white/10 bg-white/[0.05] p-5">
-          <div className="text-center text-sm font-medium text-white/80">Or sign in with your club account</div>
+        {/* PRIMARY: real club sign-in. Staff/members invited by their club set a
+            password from their invite email, then sign in here. */}
+        <form onSubmit={signIn} className="w-full space-y-3 rounded-2xl border border-white/10 bg-white/[0.05] p-6">
           <Input
             type="email"
             placeholder="Email"
@@ -181,15 +151,59 @@ export function PortalLogin() {
           >
             {pending === "form" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
           </Button>
-          <p className="text-center text-xs text-white/45">
-            New club? <Link href="/onboarding" className="text-accent hover:underline" data-testid="link-onboarding">Set up your club</Link>
-          </p>
+          <div className="flex items-center justify-between pt-1 text-xs">
+            <Link href="/portal/forgot" className="text-accent hover:underline" data-testid="link-forgot-password">
+              Forgot your password?
+            </Link>
+            <Link href="/onboarding" className="text-accent hover:underline" data-testid="link-onboarding">
+              New club? Set up your club →
+            </Link>
+          </div>
         </form>
 
-        <div className="mt-8 flex flex-col items-center gap-3 text-center">
-          <Link href="/portal/forgot" className="text-sm text-accent hover:underline" data-testid="link-forgot-password">
-            Forgot your password?
-          </Link>
+        {/* SECONDARY: sample-data demo, collapsed so real users aren't funnelled
+            into the demo club by mistake. */}
+        <div className="mt-8">
+          <button
+            type="button"
+            onClick={() => setShowDemo((s) => !s)}
+            className="mx-auto flex items-center gap-1.5 text-xs text-white/45 transition-colors hover:text-white/70"
+            data-testid="button-toggle-demo"
+          >
+            {showDemo ? "Hide demo" : "Just exploring? Try the interactive demo"}
+            <ArrowRight className={cn("h-3 w-3 transition-transform", showDemo && "rotate-90")} />
+          </button>
+
+          {showDemo && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {portals.map((p) => (
+                <button
+                  key={p.href}
+                  type="button"
+                  onClick={() => enter(p)}
+                  disabled={pending !== null}
+                  data-testid={p.testid}
+                  className="block w-full text-left disabled:cursor-wait"
+                >
+                  <Card className="group h-full cursor-pointer border-white/10 bg-white/[0.04] p-4 text-white transition-all hover:border-accent/50 hover:bg-white/[0.08]">
+                    <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20 text-accent">
+                      <p.icon className="h-4 w-4" />
+                    </div>
+                    <h2 className="font-display text-sm font-semibold">{p.title}</h2>
+                    <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-accent">
+                      {pending === p.href ? <>Signing in <Loader2 className="h-3 w-3 animate-spin" /></> : <>Demo <ArrowRight className="h-3 w-3" /></>}
+                    </span>
+                  </Card>
+                </button>
+              ))}
+            </div>
+          )}
+          {showDemo && (
+            <p className="mt-3 text-center text-[11px] text-white/35">Sample data only — not your club.</p>
+          )}
+        </div>
+
+        <div className="mt-8 text-center">
           <Link href="/" className="text-sm text-white/50 hover:text-white transition-colors" data-testid="link-back-site">
             ← Back to fairway360.io
           </Link>

@@ -64,8 +64,17 @@ router.post(
       .innerJoin(clubs, eq(users.clubId, clubs.id))
       .where(eq(users.email, email.toLowerCase().trim()));
 
+    // An invited user exists but has no password until they open their invite
+    // link. Without this, that case falls through to "Invalid email or
+    // password", which sends people hunting for a typo that isn't there.
+    let pendingActivation = false;
+
     for (const { user, club } of rows) {
-      if (user.status !== "active" || !user.passwordHash) continue;
+      if (user.status !== "active") continue;
+      if (!user.passwordHash) {
+        pendingActivation = true;
+        continue;
+      }
       if (!bcrypt.compareSync(password, user.passwordHash)) continue;
       if (club.status !== "active") {
         throw unauthorized("This club account is not active.");
@@ -85,6 +94,11 @@ router.post(
       return;
     }
 
+    if (pendingActivation) {
+      throw unauthorized(
+        "This account hasn't been activated yet. Open the invite email we sent you and choose \"Set your password\", then sign in. Use \"Forgot your password?\" to get a fresh link.",
+      );
+    }
     throw unauthorized("Invalid email or password.");
   }),
 );

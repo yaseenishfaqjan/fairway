@@ -22,7 +22,6 @@ import {
   memberPreferences,
   members,
   menuItems,
-  menuCategory,
   orders,
   staffProfiles,
   tasks,
@@ -36,13 +35,13 @@ import { notifyMany } from "../lib/notify";
 import { sendSms } from "../lib/sms";
 import { DEFAULT_AGENTS } from "../lib/provision";
 import { timezoneForClub } from "../lib/memory";
-import { zonedTime, fmtTimeTz } from "../lib/tz";
+import { zonedTime, fmtTimeTz, fmtDateShortTz, dayKeyTz, dayKeyOffsetTz, hourTz } from "../lib/tz";
 
 const router: IRouter = Router();
 const supervisor = [requireAuth, requireRole("supervisor")];
 
-const MENU_CATEGORIES = menuCategory.enumValues;
-type MenuCategory = (typeof MENU_CATEGORIES)[number];
+// Category is free text so each club can define its own (e.g. "Halfway House").
+const MenuCategoryField = z.string().trim().min(1).max(40);
 
 // ── 5.1 Employee management ─────────────────────────────────────────────────
 
@@ -442,7 +441,7 @@ const MenuItemBody = z.object({
   name: z.string().min(1).max(120),
   description: z.string().max(500).nullable().optional(),
   price: z.number().min(0).max(100000),
-  category: z.enum(MENU_CATEGORIES as [MenuCategory, ...MenuCategory[]]),
+  category: MenuCategoryField,
   imageUrl: z.string().url().max(500).nullable().optional(),
   allergens: z.array(z.string().max(40)).max(20).optional(),
   dietaryFlags: z.array(z.string().max(40)).max(20).optional(),
@@ -1138,30 +1137,73 @@ router.get(
   ...supervisor,
   asyncHandler(async (req, res) => {
     const { clubId } = req.auth!;
-    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    // Days and hours are bucketed in the CLUB's timezone, not the server's — a
+    // 7pm Pacific order belongs to that club's today, not to UTC's tomorrow.
+    const tz = await timezoneForClub(clubId);
+    // Reach back 8 days so the oldest club-local day in the window is complete
+    // regardless of the club's UTC offset.
+    const since = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
     const rows = await db
       .select()
       .from(orders)
       .where(and(eq(orders.clubId, clubId), gte(orders.placedAt, since)));
 
+    // The 7 club-local days ending today (oldest → newest), zero-filled so the
+    // dashboard chart always has 7 points even on a quiet week.
+    const days = Array.from({ length: 7 }, (_, i) => dayKeyOffsetTz(tz, i - 6));
+    const window = new Set(days);
+    const todayKey = days[6];
+    const yesterdayKey = days[5];
+
     const byStatus: Record<string, number> = {};
     const byDay: Record<string, { orders: number; revenue: number }> = {};
     const byHour: Record<number, number> = {};
+    for (const day of days) byDay[day] = { orders: 0, revenue: 0 };
+
+    const blank = () => ({ orders: 0, revenue: 0, delivered: 0, active: 0 });
+    const today = blank();
+    const yesterday = blank();
     let revenue = 0;
+
     for (const o of rows) {
+      const day = dayKeyTz(o.placedAt, tz);
+      if (!window.has(day)) continue; // outside the 7 club-local days
       byStatus[o.status] = (byStatus[o.status] ?? 0) + 1;
-      const day = o.placedAt.toISOString().slice(0, 10);
-      byDay[day] ??= { orders: 0, revenue: 0 };
+      const total = Number(o.total);
       byDay[day].orders += 1;
-      byDay[day].revenue += Number(o.total);
-      byHour[o.placedAt.getHours()] = (byHour[o.placedAt.getHours()] ?? 0) + 1;
-      revenue += Number(o.total);
+      byDay[day].revenue += total;
+      const hour = hourTz(o.placedAt, tz);
+      byHour[hour] = (byHour[hour] ?? 0) + 1;
+      revenue += total;
+
+      const bucket = day === todayKey ? today : day === yesterdayKey ? yesterday : null;
+      if (bucket) {
+        bucket.orders += 1;
+        bucket.revenue += total;
+        if (o.status === "Delivered") bucket.delivered += 1;
+        else bucket.active += 1;
+      }
     }
+
+    const round = (n: number) => Math.round(n * 100) / 100;
+    for (const day of days) byDay[day].revenue = round(byDay[day].revenue);
+    for (const b of [today, yesterday]) b.revenue = round(b.revenue);
+
     res.json({
-      orders7d: rows.length,
-      revenue7d: Math.round(revenue * 100) / 100,
+      timezone: tz,
+      orders7d: Object.values(byDay).reduce((s, d) => s + d.orders, 0),
+      revenue7d: round(revenue),
       byStatus,
       byDay,
+      today,
+      yesterday,
+      // Ready-to-plot series for the dashboard revenue chart.
+      series: days.map((day) => ({
+        day,
+        label: fmtDateShortTz(zonedTime(day, "12:00", tz) ?? new Date(), tz),
+        orders: byDay[day].orders,
+        revenue: byDay[day].revenue,
+      })),
       peakHours: Object.entries(byHour)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)

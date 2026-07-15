@@ -28,6 +28,7 @@ import { installClientMonitoring } from "@/lib/client-monitoring";
 if (import.meta.env.PROD) installClientMonitoring();
 import { SupervisorPortal } from "@/pages/portal/supervisor";
 import { AdminPortal } from "@/pages/portal/admin";
+import { AdminDashboard } from "@/pages/portal/dashboard";
 import { EmployeesPortal } from "@/pages/portal/employees";
 import { MembersPortal } from "@/pages/portal/members";
 
@@ -82,8 +83,13 @@ function Router() {
       <Route path="/portal" component={PortalLogin} />
       <Route path="/portal/forgot" component={ForgotPassword} />
       <Route path="/portal/reset" component={ResetPassword} />
+      {/* Platform team (Fairway360 staff) — tenant management. */}
       <Route path="/portal/admin">
         <RequireRole role="super_admin" component={AdminPortal} />
+      </Route>
+      {/* A club's own admin home: today's numbers, orders, menu, staff. */}
+      <Route path="/portal/dashboard">
+        <RequireRole role="supervisor" component={AdminDashboard} />
       </Route>
       <Route path="/portal/supervisor">
         <RequireRole role="supervisor" component={SupervisorPortal} />

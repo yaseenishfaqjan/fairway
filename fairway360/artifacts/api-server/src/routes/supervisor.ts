@@ -6,7 +6,9 @@ import {
   desc,
   eq,
   gt,
+  gte,
   isNotNull,
+  lt,
   ne,
   sum,
 } from "drizzle-orm";
@@ -62,6 +64,7 @@ import {
   toAnnouncement,
 } from "../lib/serializers";
 import { timezoneForClub } from "../lib/memory";
+import { zonedTime, dayKeyOffsetTz } from "../lib/tz";
 
 const router: IRouter = Router();
 const supervisor = [requireAuth, requireRole("supervisor")];
@@ -171,6 +174,11 @@ router.get(
   ...supervisor,
   asyncHandler(async (req, res) => {
     const { clubId } = req.auth!;
+    // "Today" means the club's local day (Fairway360 spans every US timezone),
+    // so build the day window from the club's tz rather than the server's.
+    const tz = await timezoneForClub(clubId);
+    const dayStart = zonedTime(dayKeyOffsetTz(tz, 0), "00:00", tz) ?? new Date(0);
+    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
     const [
       [onCourse],
       [openReqs],
@@ -207,11 +215,24 @@ router.get(
       db
         .select({ n: count() })
         .from(teeTimes)
-        .where(and(eq(teeTimes.clubId, clubId), isNotNull(teeTimes.memberId))),
+        .where(
+          and(
+            eq(teeTimes.clubId, clubId),
+            isNotNull(teeTimes.memberId),
+            gte(teeTimes.startsAt, dayStart),
+            lt(teeTimes.startsAt, dayEnd),
+          ),
+        ),
       db
         .select({ total: sum(orders.total) })
         .from(orders)
-        .where(eq(orders.clubId, clubId)),
+        .where(
+          and(
+            eq(orders.clubId, clubId),
+            gte(orders.placedAt, dayStart),
+            lt(orders.placedAt, dayEnd),
+          ),
+        ),
     ]);
 
     res.json({

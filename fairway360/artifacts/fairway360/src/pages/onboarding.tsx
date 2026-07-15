@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { PortalLogo } from "@/components/portal/portal-logo";
+import { CategoryPicker } from "@/components/portal/category-picker";
 import { cn } from "@/lib/utils";
 
 const api = {
@@ -303,12 +304,12 @@ export function Onboarding() {
                 <div key={i} className="grid grid-cols-[1fr_5.5rem_7rem_2.25rem] items-center gap-2">
                   <Input className={inputCls} placeholder="Item name" value={m.name} onChange={(e) => setMenu(menu.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} data-testid={`input-onboarding-menu-name-${i}`} />
                   <Input className={inputCls} type="number" placeholder="$" value={m.price} onChange={(e) => setMenu(menu.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))} />
-                  <Select value={m.category} onValueChange={(v) => setMenu(menu.map((x, j) => (j === i ? { ...x, category: v } : x)))}>
-                    <SelectTrigger className={inputCls}><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {["Breakfast", "Lunch", "Dinner", "Beverages", "Snacks", "Specials"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <CategoryPicker
+                    value={m.category}
+                    existing={menu.map((x) => x.category)}
+                    onChange={(v) => setMenu(menu.map((x, j) => (j === i ? { ...x, category: v } : x)))}
+                    testId={`select-onboarding-menu-category-${i}`}
+                  />
                   <Button size="icon" variant="ghost" onClick={() => setMenu(menu.filter((_, j) => j !== i))} aria-label="Remove row">
                     <Trash2 className="h-4 w-4 text-red-400" />
                   </Button>

@@ -5,6 +5,7 @@
 
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CategoryPicker } from "@/components/portal/category-picker";
 import {
   UtensilsCrossed, CalendarRange, BookOpen, Bot, Link2, Megaphone, Settings2,
   Plus, Trash2, Pencil, RefreshCw, Ban, Loader2, Users, Upload,
@@ -170,10 +171,12 @@ function MenuTab() {
               <Textarea className={inputCls} placeholder="Description" value={editing.description ?? ""} onChange={(e) => setEditing({ ...editing, description: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
                 <Input className={inputCls} type="number" step="0.5" placeholder="Price" value={editing.price ?? ""} onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })} data-testid="input-menu-price" />
-                <Select value={editing.category} onValueChange={(v) => setEditing({ ...editing, category: v })}>
-                  <SelectTrigger className={inputCls}><SelectValue placeholder="Category" /></SelectTrigger>
-                  <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
+                <CategoryPicker
+                  value={editing.category ?? ""}
+                  existing={[...CATEGORIES, ...items.map((m) => m.category)]}
+                  onChange={(v) => setEditing({ ...editing, category: v })}
+                  testId="select-menu-category"
+                />
               </div>
               <div>
                 <div className="mb-1 text-xs text-white/60">Allergens</div>

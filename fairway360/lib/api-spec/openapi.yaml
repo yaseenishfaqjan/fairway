@@ -1160,8 +1160,9 @@ components:
       required: [account, upcoming, announcements, events]
 
     MenuCategory:
+      # Free text — each club defines its own categories (the UI suggests
+      # Breakfast/Lunch/Dinner/Beverages/Snacks/Specials but any value is allowed).
       type: string
-      enum: [Drinks, Food, Snacks, Breakfast, Lunch, Dinner, Beverages, Specials]
     MenuItem:
       type: object
       properties:

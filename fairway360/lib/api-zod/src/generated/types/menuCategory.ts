@@ -6,16 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type MenuCategory = typeof MenuCategory[keyof typeof MenuCategory];
-
-
-export const MenuCategory = {
-  Drinks: 'Drinks',
-  Food: 'Food',
-  Snacks: 'Snacks',
-  Breakfast: 'Breakfast',
-  Lunch: 'Lunch',
-  Dinner: 'Dinner',
-  Beverages: 'Beverages',
-  Specials: 'Specials',
-} as const;
+export type MenuCategory = string;

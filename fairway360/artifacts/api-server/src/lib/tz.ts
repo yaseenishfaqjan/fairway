@@ -40,6 +40,33 @@ export function zonedTime(dateStr: string, timeStr: string, tz: string): Date | 
   return new Date(asUTC - offset);
 }
 
+/**
+ * "YYYY-MM-DD" for an instant as seen in the club's timezone. Analytics must
+ * bucket by the CLUB's day, not UTC's — a 7pm Pacific order is still "today".
+ */
+export function dayKeyTz(d: Date, tz: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/** Hour of day (0-23) for an instant as seen in the club's timezone. */
+export function hourTz(d: Date, tz: string): number {
+  return Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: tz, hour: "2-digit", hour12: false }).format(d),
+  ) % 24;
+}
+
+/** Today's "YYYY-MM-DD" in the club's timezone, offset by `deltaDays`. */
+export function dayKeyOffsetTz(tz: string, deltaDays = 0): string {
+  return dayKeyTz(new Date(Date.now() + deltaDays * 86_400_000), tz);
+}
+
 /** "8:00 AM" in the club's timezone. */
 export function fmtTimeTz(d: Date, tz: string): string {
   return new Intl.DateTimeFormat("en-US", {

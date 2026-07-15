@@ -154,7 +154,7 @@ export const GetMenuResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "price": zod.number(),
-  "category": zod.enum(['Drinks', 'Food', 'Snacks', 'Breakfast', 'Lunch', 'Dinner', 'Beverages', 'Specials']),
+  "category": zod.string(),
   "image": zod.string()
 })
 export const GetMenuResponse = zod.array(GetMenuResponseItem)

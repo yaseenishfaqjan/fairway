@@ -17,16 +17,16 @@ import { members } from "./users";
 import { carts, rounds } from "./golf";
 import { pk, timestamps } from "./_helpers";
 
-export const menuCategory = pgEnum("menu_category", [
-  "Drinks",
-  "Food",
-  "Snacks",
+// Suggested categories offered in the UI. `menu_items.category` is free text so
+// each club can add its own (e.g. "Halfway House", "Grill Room", "Kids Menu").
+export const MENU_CATEGORY_SUGGESTIONS = [
   "Breakfast",
   "Lunch",
   "Dinner",
   "Beverages",
+  "Snacks",
   "Specials",
-]);
+] as const;
 
 export const menuItems = pgTable("menu_items", {
   id: pk(),
@@ -36,7 +36,8 @@ export const menuItems = pgTable("menu_items", {
   name: text("name").notNull(),
   description: text("description"),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
-  category: menuCategory("category").notNull(),
+  // Free text — clubs define their own categories (see MENU_CATEGORY_SUGGESTIONS).
+  category: text("category").notNull(),
   imageUrl: text("image_url"),
   allergens: jsonb("allergens").notNull().default([]), // ["nuts", "dairy", ...]
   dietaryFlags: jsonb("dietary_flags").notNull().default([]), // ["vegetarian", ...]
