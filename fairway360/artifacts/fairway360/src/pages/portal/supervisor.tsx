@@ -43,6 +43,18 @@ import { ManageClub } from "@/components/portal/manage-club";
 
 type SectionKey = "overview" | "team" | "members" | "map" | "service" | "channels" | "escalations" | "leads" | "bookings" | "tasks" | "manage";
 
+const SECTION_KEYS: SectionKey[] = [
+  "overview", "team", "members", "map", "service",
+  "channels", "escalations", "leads", "bookings", "tasks", "manage",
+];
+
+/** Opening section from ?section=, ignoring anything not a real section. */
+function sectionFromUrl(): SectionKey {
+  if (typeof window === "undefined") return "overview";
+  const want = new URLSearchParams(window.location.search).get("section");
+  return SECTION_KEYS.find((k) => k === want) ?? "overview";
+}
+
 const NAV: PortalNavItem[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
   { key: "team", label: "Team", icon: Users },
@@ -123,7 +135,9 @@ export function SupervisorPortal() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { orders } = useOrders();
-  const [section, setSection] = useState<SectionKey>("overview");
+  // Deep-linkable: /portal/supervisor?section=manage opens that section
+  // directly, so links from the admin dashboard land where they promise.
+  const [section, setSection] = useState<SectionKey>(sectionFromUrl);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const overviewQ = useGetOverview();
