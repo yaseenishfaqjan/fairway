@@ -11,7 +11,7 @@ export const ORGANIZATION_SCHEMA = {
   logo: `${SITE_URL}/favicon.png`,
   description:
     "AI-powered club operation system for golf courses and country clubs. Automates tee times, memberships, events, dining, reviews, and staff workflows.",
-  email: "hello@fairway360.io",
+  email: "info@fairway360.io",
   foundingDate: "2026",
   areaServed: "United States",
   sameAs: ["https://linkedin.com/company/fairway360", "https://twitter.com/fairway360"],

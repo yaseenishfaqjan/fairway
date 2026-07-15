@@ -16,7 +16,7 @@ export function Footer() {
             <address className="mt-4 text-sm not-italic text-muted-foreground">
               Fairway360<br />
               Powered by Scalaro<br />
-              <a href="mailto:hello@fairway360.io" className="hover:text-primary" data-testid="link-footer-email">hello@fairway360.io</a>
+              <a href="mailto:info@fairway360.io" className="hover:text-primary" data-testid="link-footer-email">info@fairway360.io</a>
             </address>
           </div>
           <div>
