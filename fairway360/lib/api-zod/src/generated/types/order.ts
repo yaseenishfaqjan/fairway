@@ -18,5 +18,6 @@ export interface Order {
   note: string;
   status: OrderStatus;
   placedAt: string;
+  placedAtIso?: string;
   total: number;
 }

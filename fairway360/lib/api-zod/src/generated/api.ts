@@ -251,6 +251,7 @@ export const ListOrdersResponseItem = zod.object({
   "note": zod.string(),
   "status": zod.enum(['New', 'Preparing', 'Ready', 'Delivered']),
   "placedAt": zod.string(),
+  "placedAtIso": zod.string().optional(),
   "total": zod.number()
 })
 export const ListOrdersResponse = zod.array(ListOrdersResponseItem)
@@ -282,6 +283,7 @@ export const GetMyOrdersResponseItem = zod.object({
   "note": zod.string(),
   "status": zod.enum(['New', 'Preparing', 'Ready', 'Delivered']),
   "placedAt": zod.string(),
+  "placedAtIso": zod.string().optional(),
   "total": zod.number()
 })
 export const GetMyOrdersResponse = zod.array(GetMyOrdersResponseItem)
@@ -310,6 +312,7 @@ export const AdvanceOrderStatusResponse = zod.object({
   "note": zod.string(),
   "status": zod.enum(['New', 'Preparing', 'Ready', 'Delivered']),
   "placedAt": zod.string(),
+  "placedAtIso": zod.string().optional(),
   "total": zod.number()
 })
 

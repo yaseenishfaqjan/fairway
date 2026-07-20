@@ -185,6 +185,9 @@ export function toOrder(
     note: o.note,
     status: o.status,
     placedAt: fmtAgoLong(o.placedAt),
+    // Raw instant so the client can show a clock time ("9:30 AM") in the club's
+    // timezone; placedAt stays humanized ("2h ago") for the other consumers.
+    placedAtIso: o.placedAt.toISOString(),
     total: num(o.total),
   };
 }

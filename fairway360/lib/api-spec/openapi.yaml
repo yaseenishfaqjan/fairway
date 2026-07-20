@@ -1244,6 +1244,8 @@ components:
         note: { type: string }
         status: { $ref: "#/components/schemas/OrderStatus" }
         placedAt: { type: string }
+        # Raw ISO instant (string); the UI renders a clock time in the club's tz.
+        placedAtIso: { type: string }
         total: { type: number }
       required: [id, member, lines, note, status, placedAt, total]
     OrderInputLine:

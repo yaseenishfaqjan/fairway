@@ -1140,9 +1140,9 @@ router.get(
     // Days and hours are bucketed in the CLUB's timezone, not the server's — a
     // 7pm Pacific order belongs to that club's today, not to UTC's tomorrow.
     const tz = await timezoneForClub(clubId);
-    // Reach back 8 days so the oldest club-local day in the window is complete
-    // regardless of the club's UTC offset.
-    const since = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+    // Reach back 16 days so both the current and the previous 7 club-local days
+    // are complete regardless of the club's UTC offset (the extra day is slack).
+    const since = new Date(Date.now() - 16 * 24 * 60 * 60 * 1000);
     const rows = await db
       .select()
       .from(orders)
@@ -1152,6 +1152,8 @@ router.get(
     // dashboard chart always has 7 points even on a quiet week.
     const days = Array.from({ length: 7 }, (_, i) => dayKeyOffsetTz(tz, i - 6));
     const window = new Set(days);
+    // The 7 days before that, for the "vs previous 7 days" comparison.
+    const prevDays = new Set(Array.from({ length: 7 }, (_, i) => dayKeyOffsetTz(tz, i - 13)));
     const todayKey = days[6];
     const yesterdayKey = days[5];
 
@@ -1164,10 +1166,12 @@ router.get(
     const today = blank();
     const yesterday = blank();
     let revenue = 0;
+    let revenuePrev7d = 0;
 
     for (const o of rows) {
       const day = dayKeyTz(o.placedAt, tz);
-      if (!window.has(day)) continue; // outside the 7 club-local days
+      if (prevDays.has(day)) revenuePrev7d += Number(o.total);
+      if (!window.has(day)) continue; // outside the current 7 club-local days
       byStatus[o.status] = (byStatus[o.status] ?? 0) + 1;
       const total = Number(o.total);
       byDay[day].orders += 1;
@@ -1193,6 +1197,7 @@ router.get(
       timezone: tz,
       orders7d: Object.values(byDay).reduce((s, d) => s + d.orders, 0),
       revenue7d: round(revenue),
+      revenuePrev7d: round(revenuePrev7d),
       byStatus,
       byDay,
       today,

@@ -15,7 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   LayoutGrid, ShoppingCart, UtensilsCrossed, Users, Settings as SettingsIcon,
   ShoppingBag, DollarSign, ClipboardList, CheckCircle2, TrendingUp, TrendingDown,
-  ChevronRight, Calendar, Loader2, Bell, Settings2,
+  ChevronRight, Calendar, Loader2, Bell, Settings2, Menu as MenuIcon, X, LogOut,
 } from "lucide-react";
 import { customFetch } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
@@ -33,14 +33,11 @@ type OrdersAnalytics = {
   timezone: string;
   orders7d: number;
   revenue7d: number;
+  revenuePrev7d: number;
   byStatus: Record<string, number>;
   today: { orders: number; revenue: number; delivered: number; active: number };
   yesterday: { orders: number; revenue: number; delivered: number; active: number };
   series: DayPoint[];
-};
-type Overview = {
-  membersOnCourse: number; openRequests: number; activeOrders: number;
-  staffOnShift: number; newLeads: number; bookingsToday: number; revenueToday: number;
 };
 type MenuItem = {
   id: string; name: string; description: string | null; price: number;
@@ -200,13 +197,25 @@ function RevenueChart({ series }: { series: DayPoint[] }) {
   );
 }
 
+/** Clock time ("9:30 AM") for an order, in the club's timezone. */
+function clockTime(iso: string | undefined, tz: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: tz, hour: "numeric", minute: "2-digit", hour12: true,
+  }).format(d);
+}
+
 function OrderRow({
-  order, onClick,
+  order, tz, onClick,
 }: {
-  order: { id: string; status: string; total: number; hole?: number | null; cartNumber?: string | null; member: string };
+  order: { id: string; status: string; total: number; hole?: number | null; cartNumber?: string | null; member: string; placedAtIso?: string };
+  tz?: string;
   onClick?: () => void;
 }) {
   const where = [order.hole ? `Hole ${order.hole}` : null, order.cartNumber].filter(Boolean).join(" · ");
+  const time = tz ? clockTime(order.placedAtIso, tz) : "";
   return (
     <button
       type="button"
@@ -221,6 +230,7 @@ function OrderRow({
         <div className="truncate text-sm font-semibold">Order #{order.id.slice(0, 4).toUpperCase()}</div>
         <div className="truncate text-xs text-white/45">{where || order.member}</div>
       </div>
+      {time && <span className="hidden shrink-0 text-xs text-white/45 tabular-nums sm:block">{time}</span>}
       <div className="flex shrink-0 items-center gap-2">
         <Pill status={order.status} />
         <span className="text-sm font-bold tabular-nums">{money(order.total)}</span>
@@ -237,10 +247,6 @@ function DashboardSection({ onJump }: { onJump: (s: SectionKey, filter?: string)
     queryKey: ["/api/analytics/orders"],
     queryFn: () => api.get<OrdersAnalytics>("/api/analytics/orders"),
   });
-  const overviewQ = useQuery({
-    queryKey: ["/api/overview"],
-    queryFn: () => api.get<Overview>("/api/overview"),
-  });
 
   const a = analyticsQ.data;
   const series = a?.series ?? [];
@@ -253,7 +259,7 @@ function DashboardSection({ onJump }: { onJump: (s: SectionKey, filter?: string)
     timeZone: tz, month: "long", day: "numeric", year: "numeric",
   });
   const rev7d = a?.revenue7d ?? 0;
-  const prev7dRev = 0; // no 14-day window yet; show the total only
+  const rev7dDelta = delta(rev7d, a?.revenuePrev7d ?? 0);
   const firstName = (user?.name ?? "there").split(" ")[0];
 
   if (analyticsQ.isLoading) {
@@ -314,6 +320,13 @@ function DashboardSection({ onJump }: { onJump: (s: SectionKey, filter?: string)
         </div>
         <div className="text-[26px] font-bold tabular-nums" data-testid="text-revenue-7d">{money(rev7d)}</div>
         <div className="text-xs text-white/45">Total Revenue · {a?.orders7d ?? 0} orders</div>
+        {rev7dDelta !== null && (
+          <div className={cn("mt-1 flex items-center gap-1 text-[11px] font-medium",
+            rev7dDelta >= 0 ? "text-[#46c97e]" : "text-[#e5727a]")}>
+            {rev7dDelta >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {rev7dDelta >= 0 ? "+" : ""}{rev7dDelta}% vs previous 7 days
+          </div>
+        )}
         <div className="mt-3">
           {series.some((d) => d.revenue > 0)
             ? <RevenueChart series={series} />
@@ -329,28 +342,8 @@ function DashboardSection({ onJump }: { onJump: (s: SectionKey, filter?: string)
         </div>
         {orders.length === 0
           ? <Empty>No orders yet.</Empty>
-          : <div>{orders.slice(0, 4).map((o) => <OrderRow key={o.id} order={o} onClick={() => onJump("orders")} />)}</div>}
+          : <div>{orders.slice(0, 4).map((o) => <OrderRow key={o.id} order={o} tz={tz} onClick={() => onJump("orders")} />)}</div>}
       </Card>
-
-      {/* A club-ops strip the reference mock didn't have but the data does. */}
-      {overviewQ.data && (
-        <Card>
-          <Eyebrow className="mb-2">Club Right Now</Eyebrow>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm sm:grid-cols-4">
-            {[
-              ["Staff on shift", overviewQ.data.staffOnShift],
-              ["Bookings today", overviewQ.data.bookingsToday],
-              ["Open requests", overviewQ.data.openRequests],
-              ["New leads", overviewQ.data.newLeads],
-            ].map(([label, n]) => (
-              <div key={String(label)} className="flex items-baseline justify-between gap-2 sm:block">
-                <span className="text-xs text-white/45">{label}</span>
-                <span className="font-semibold tabular-nums">{String(n)}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
     </div>
   );
 }
@@ -569,11 +562,13 @@ export function AdminDashboard() {
   const { orders } = useOrders();
   const [section, setSection] = useState<SectionKey>("dashboard");
   const [orderFilter, setOrderFilter] = useState<string | undefined>();
+  const [menuOpen, setMenuOpen] = useState(false);
   const activeCount = orders.filter((o) => o.status !== "Delivered").length;
 
   const jump = (s: SectionKey, filter?: string) => {
     setOrderFilter(filter);
     setSection(s);
+    setMenuOpen(false);
   };
 
   const initials = useMemo(
@@ -597,6 +592,50 @@ export function AdminDashboard() {
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#2a6f4d] opacity-[0.18] blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-[#d7ad42] opacity-[0.08] blur-3xl" />
       </div>
+
+      {/* Mobile slide-in menu (the hamburger target) */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+          <button aria-label="Close menu" onClick={() => setMenuOpen(false)} className="absolute inset-0 bg-black/60" />
+          <div className="absolute left-0 top-0 flex h-full w-72 max-w-[80vw] flex-col border-r border-white/10 bg-[#071a10] p-4">
+            <div className="mb-6 flex items-center justify-between">
+              <PortalLogo size="sm" />
+              <button onClick={() => setMenuOpen(false)} className="rounded-lg p-1.5 text-white/60 hover:bg-white/10 hover:text-white" aria-label="Close menu">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <nav className="space-y-1">
+              {NAV.map(({ key, label, icon: Icon }) => (
+                <button
+                  key={key}
+                  onClick={() => jump(key)}
+                  data-testid={`nav-drawer-${key}`}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
+                    section === key ? "bg-accent/15 text-accent" : "text-white/60 hover:bg-white/5 hover:text-white",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                  {key === "orders" && activeCount > 0 && (
+                    <span className="ml-auto rounded-full bg-accent px-1.5 text-[10px] font-bold text-[#04130c]">{activeCount}</span>
+                  )}
+                </button>
+              ))}
+            </nav>
+            <div className="mt-auto space-y-1 border-t border-white/10 pt-3">
+              <Link href="/portal/supervisor">
+                <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/60 hover:bg-white/5 hover:text-white">
+                  <Settings2 className="h-4 w-4" /> Full supervisor portal
+                </button>
+              </Link>
+              <button onClick={() => logout()} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-white/60 hover:bg-white/5 hover:text-white" data-testid="button-logout-drawer">
+                <LogOut className="h-4 w-4" /> Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="relative flex">
         {/* Desktop sidebar (mobile uses the bottom nav below) */}
@@ -634,13 +673,20 @@ export function AdminDashboard() {
         </aside>
 
         <div className="min-w-0 flex-1">
-          {/* Header */}
+          {/* Header — mobile: hamburger · centered logo · bell · avatar. */}
           <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-white/10 bg-[rgba(4,15,9,0.9)] px-4 py-3 backdrop-blur-xl">
-            <div className="lg:hidden"><PortalLogo size="sm" /></div>
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="rounded-lg p-1 text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
+              aria-label="Open menu"
+              data-testid="button-menu"
+            >
+              <MenuIcon className="h-5 w-5" />
+            </button>
+            <div className="flex flex-1 justify-center lg:hidden"><PortalLogo size="sm" /></div>
             <div className="hidden min-w-0 flex-1 lg:block">
               <div className="truncate text-sm font-semibold">{user?.clubName ?? "Your club"}</div>
             </div>
-            <div className="flex-1 lg:hidden" />
             <Link href="/portal/supervisor?section=escalations">
               <button className="relative rounded-full p-2 text-white/60 hover:text-white" aria-label="Notifications">
                 <Bell className="h-5 w-5" />
