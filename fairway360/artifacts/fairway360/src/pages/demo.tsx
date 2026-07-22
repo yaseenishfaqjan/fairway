@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Phone } from "lucide-react";
 import { useCreateDemoRequest } from "@workspace/api-client-react";
 
 const demoSchema = z.object({
@@ -97,6 +97,28 @@ export function Demo() {
               Tailored to: {topic}
             </p>
           )}
+        </div>
+
+        {/* Skip the form entirely — talk to the AI and let it book the call.
+            Doubles as the product demo: this is our AI, answering live. */}
+        <div className="mb-10 rounded-2xl border border-accent/30 bg-accent/[0.06] p-6 text-center">
+          <p className="eyebrow mb-2 text-[hsl(38_55%_40%)]">Or skip the form</p>
+          <h2 className="mb-2 text-2xl font-semibold text-foreground">Talk to our AI right now</h2>
+          <p className="mx-auto mb-5 max-w-lg text-muted-foreground">
+            Call and our AI assistant will answer, ask about your course, and book your
+            consultation — 24/7, no waiting. It's also the fastest way to judge the AI for yourself.
+          </p>
+          <a
+            href="tel:+14122851554"
+            data-testid="link-call-ai"
+            className="inline-flex items-center gap-2.5 rounded-full bg-primary px-7 py-3.5 text-lg font-semibold text-primary-foreground transition hover:opacity-90"
+          >
+            <Phone className="h-5 w-5" />
+            +1 (412) 285-1554
+          </a>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Answered 24/7 by the Fairway360 AI assistant.
+          </p>
         </div>
 
         {submitted ? (

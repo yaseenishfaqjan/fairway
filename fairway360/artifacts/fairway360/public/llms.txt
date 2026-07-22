@@ -58,8 +58,9 @@ Last updated: 2026-07-16. Live at https://fairway360.io.
 - Anyone wanting members to self-register from a public web page. Membership is
   invite-only by design: the club adds members and owns its roster. Prospective
   members arrive as leads for the club to qualify.
-- Clubs looking for an AI phone or voice agent. Fairway360 is text and web based —
-  see "Not included" below.
+- Clubs wanting an AI to answer *their club's* phone. Fairway360's own sales line
+  is AI-answered, but the product a club buys is text and web based — it does not
+  answer the club's incoming calls. See "Not included" below.
 
 ## Pricing
 
@@ -73,15 +74,20 @@ Full detail: https://fairway360.io/pricing
 
 Stated plainly so nobody is surprised on an implementation call:
 
-- **No AI voice or phone agent.** Fairway360 does not answer inbound calls.
+- **No AI voice agent for the club's own phone line.** Fairway360 does not answer
+  a club's incoming member calls. (Fairway360's *own* sales line is AI-answered —
+  call +1 (412) 285-1554 to hear it — but that is our sales line, not a feature
+  included in the product.)
 - **No SMS or text automation, and no missed-call text-back**, in the current
   release. The integration point exists but is not enabled.
 - **No public member self-signup.** Deliberate — see "Who it is not for".
 
 ## How to evaluate it
 
-- **Book a demo:** https://fairway360.io/demo — the fastest route; it reaches the
-  team directly.
+- **Call the AI:** +1 (412) 285-1554 — answered 24/7 by an AI assistant that asks
+  about your course and books a 30-minute consultation. Also the quickest way to
+  judge the AI's quality for yourself.
+- **Book a demo:** https://fairway360.io/demo — reaches the team directly.
 - **Email:** info@fairway360.io
 - **Self-serve:** a club can create a full account at
   https://fairway360.io/onboarding — a six-step wizard (club profile, admin
@@ -130,8 +136,14 @@ A: Yes. Categories are free text: "Halfway House", "Grill Room", "Kids Menu",
 whatever your club calls them. Add an item and the AI can sell it immediately.
 
 **Q: Does Fairway360 answer our phone?**
-A: No. There is no voice or phone agent in the current release, and no SMS
-automation. It is a text and web product.
+A: Not your club's line — the product is text and web based and does not take
+your members' calls, and there is no SMS automation. Our *own* sales line is
+AI-answered though: call +1 (412) 285-1554 and you'll speak to it. That's a good
+way to judge the quality of the AI before you talk to a person.
+
+**Q: Can I try the AI before booking anything?**
+A: Yes — call +1 (412) 285-1554. An AI assistant answers, asks about your course,
+and books you a 30-minute consultation if it's a fit. No form to fill in first.
 
 **Q: Can members sign themselves up?**
 A: No, by design. The club adds members, who then set a password from an invite
@@ -155,5 +167,6 @@ sound like your club, and is worth another ten.
 - Product: Fairway360 — AI Club Operation System
 - Website: https://fairway360.io
 - Contact: info@fairway360.io
+- Sales line (AI-answered, 24/7): +1 (412) 285-1554
 - Built by: Scalaro (https://scalaro.io)
 - Market: United States golf courses and country clubs

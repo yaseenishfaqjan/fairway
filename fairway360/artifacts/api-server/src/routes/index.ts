@@ -14,6 +14,7 @@ import channelsRouter from "./channels";
 import realtimeRouter from "./realtime";
 import pushRouter from "./push";
 import notificationsRouter from "./notifications";
+import vapiWebhookRouter from "./vapi-webhook";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(channelsRouter);
 router.use(realtimeRouter);
 router.use(pushRouter);
 router.use(notificationsRouter);
+router.use(vapiWebhookRouter);
 
 export default router;

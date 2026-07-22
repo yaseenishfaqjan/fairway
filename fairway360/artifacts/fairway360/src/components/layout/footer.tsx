@@ -16,7 +16,9 @@ export function Footer() {
             <address className="mt-4 text-sm not-italic text-muted-foreground">
               Fairway360<br />
               Powered by Scalaro<br />
-              <a href="mailto:info@fairway360.io" className="hover:text-primary" data-testid="link-footer-email">info@fairway360.io</a>
+              <a href="mailto:info@fairway360.io" className="hover:text-primary" data-testid="link-footer-email">info@fairway360.io</a><br />
+              <a href="tel:+14122851554" className="hover:text-primary" data-testid="link-footer-phone">+1 (412) 285-1554</a>
+              <span className="block text-xs text-muted-foreground/70">Answered 24/7 by our AI assistant</span>
             </address>
           </div>
           <div>
