@@ -7,6 +7,78 @@ lead (source `Phone (AI)`) and emails `SALES_NOTIFY_EMAIL`.
 
 ---
 
+## 0. Cal.com scheduling + timezone across all 50 states
+
+Event types (live): `cal.com/fairway360/30min`, `cal.com/fairway360/15min`.
+
+**Cal.com does the timezone conversion. The agent only has to pass the caller's
+timezone when it books.** There is no timezone code in Fairway360 for this — it's
+Vapi tool-config plus one prompt rule. Given the correct timezone string, Cal.com
+shows availability in the caller's local time, emails them a confirmation in that
+time, and puts it on your team's calendar in your time.
+
+### Set your team's availability first (once)
+
+Cal.com → Availability → set your working hours in **your** timezone (the zone the
+consultations are actually taken in). Cal.com converts every caller's requested
+time against this automatically. If this is wrong, every booking is off.
+
+### How the agent learns the caller's timezone
+
+It already asks the course name — ask the **state** in the same breath ("What's
+the name of your course, and what state is it in?"). Map state → IANA timezone and
+pass it to the Cal.com tool. States are more reliable over a phone than asking
+"what timezone are you in" (people misremember, and it dodges the Arizona/Hawaii
+no-DST traps).
+
+### State → IANA timezone (all 50 + DC)
+
+```
+America/New_York   (Eastern):   CT DE DC FL GA IN KY ME MD MA MI NH NJ NY NC OH PA RI SC TN VT VA WV
+America/Chicago    (Central):   AL AR IL IA KS LA MN MS MO NE ND OK SD TX WI
+America/Denver     (Mountain):  CO ID MT NM UT WY
+America/Phoenix    (Arizona, no DST): AZ
+America/Los_Angeles (Pacific):  CA NV OR WA
+America/Anchorage  (Alaska):    AK
+Pacific/Honolulu   (Hawaii, no DST): HI
+```
+
+Paste this as a lookup into the Vapi tool/prompt.
+
+**Split states — majority zone shown above; a minority of the state differs:**
+FL (panhandle Central), IN & KY & MI & TN (western parts Central), KS & NE & ND &
+SD & TX (western parts Mountain), ID (panhandle Pacific), OR (eastern sliver
+Mountain). For a sales consultation the majority zone is right the vast majority of
+the time, and the confirmation email shows the booked time in the caller's zone so
+a rare mismatch is visible. If you want zero risk, add one prompt line: "If their
+course is in [FL, IN, KY, MI, TN, KS, NE, ND, SD, TX, ID, OR], confirm which
+timezone they're in." AZ (Phoenix) and HI (Honolulu) are unambiguous but special
+because they don't observe daylight saving — the IANA names above handle that
+correctly, do not substitute Denver/Los_Angeles for them.
+
+### Prompt addition for booking
+
+```
+Before offering times, you must know the caller's timezone. You learned their
+state when you asked for the course. Use it: Eastern for the eastern states,
+Central for the central plains, Mountain for the Rockies, Pacific for the west
+coast, Arizona is its own no-DST zone, Alaska and Hawaii their own.
+When you call the scheduling tool, pass the caller's timezone. Offer and confirm
+every time IN THE CALLER'S timezone: "That's 2:30 PM your time, Eastern — correct?"
+Never state a time without saying whose timezone it's in.
+```
+
+### Wiring the tools in Vapi
+
+Use Vapi's native Cal.com integration (Assistant → Tools → Cal.com), authenticate
+with your Cal.com API key, and select the 30-minute event type. It exposes a
+check-availability and a book function; both take a `timezone`. The agent fills
+that from the state per above. **Until these tools are connected, the agent has no
+calendar and will invent times (see §3.1) — connecting them is what actually fixes
+the fake-booking problem.**
+
+---
+
 ## 1. Wiring (Vapi dashboard → the phone number)
 
 | Field | Value |
