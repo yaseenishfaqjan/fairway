@@ -68,14 +68,73 @@ every time IN THE CALLER'S timezone: "That's 2:30 PM your time, Eastern — corr
 Never state a time without saying whose timezone it's in.
 ```
 
-### Wiring the tools in Vapi
+### Wiring the tools in Vapi (API Request — native Cal.com was removed)
 
-Use Vapi's native Cal.com integration (Assistant → Tools → Cal.com), authenticate
-with your Cal.com API key, and select the 30-minute event type. It exposes a
-check-availability and a book function; both take a `timezone`. The agent fills
-that from the state per above. **Until these tools are connected, the agent has no
-calendar and will invent times (see §3.1) — connecting them is what actually fixes
-the fake-booking problem.**
+Vapi no longer has a native Cal.com tool, so use two **API Request** tools against
+Cal.com API v2. Two tools, not one, on purpose: the availability tool returns each
+slot's exact `start` string, and the booking tool just echoes that same string
+back — so the model NEVER computes a UTC time itself, which is what made it invent
+dates (§3.1).
+
+**Prerequisites (from Cal.com):**
+- API key — Cal.com → Settings → Developer → API Keys → add. Starts `cal_live_`.
+- Event type ID — the number in the URL when you open the "30 min meeting" event.
+
+**Tool 1 — check_availability**
+- Type: API Request · Method: GET
+- URL: `https://api.cal.com/v2/slots`
+- Headers:
+  - `Authorization`: `Bearer cal_live_YOURKEY`
+  - `cal-api-version`: `2024-09-04`
+- Query params (LLM-filled): `eventTypeId` = your id (static), `start` = `{{start}}`,
+  `end` = `{{end}}`, `timeZone` = `{{timeZone}}`
+- Parameters the model fills:
+  - `start` — the day to search, ISO date e.g. `2026-07-28`
+  - `end` — usually same day or +2 days
+  - `timeZone` — IANA zone from the caller's state (see the map above)
+- Description: "Returns real open consultation slots. Call this BEFORE offering any
+  times. Only offer slots this returns, using the exact start value of each."
+
+**Tool 2 — book_consultation**
+- Type: API Request · Method: POST
+- URL: `https://api.cal.com/v2/bookings`
+- Headers:
+  - `Authorization`: `Bearer cal_live_YOURKEY`
+  - `cal-api-version`: `2024-08-13`
+  - `Content-Type`: `application/json`
+- Body:
+  ```json
+  {
+    "start": "{{start}}",
+    "eventTypeId": YOUR_EVENT_TYPE_ID,
+    "attendee": {
+      "name": "{{name}}",
+      "email": "{{email}}",
+      "timeZone": "{{timeZone}}"
+    }
+  }
+  ```
+- Parameters the model fills:
+  - `start` — the EXACT start string from the chosen availability slot (do not
+    recompute it)
+  - `name`, `email` — the caller's, email confirmed letter-by-letter
+  - `timeZone` — same IANA zone used for availability
+- Description: "Books the consultation. Call this ONLY after check_availability and
+  only with a start value that tool returned. After it succeeds, the booking is
+  real — you may confirm it. If it errors, tell the caller the team will confirm
+  by email; do NOT claim it is booked."
+
+**Booking prompt rule (add to the prompt):**
+```
+To schedule: (1) call check_availability with the caller's timezone and the day
+they want; (2) offer only the slots it returns, in the caller's timezone; (3) when
+they pick one, call book_consultation with that slot's exact start value. Never
+state or book a time that did not come from check_availability. Only say "you're
+booked, you'll get a confirmation email" after book_consultation returns success.
+```
+
+**Until both tools are connected the agent has no calendar and will invent times
+(§3.1) — this wiring is what actually fixes the fake bookings.**
 
 ---
 
