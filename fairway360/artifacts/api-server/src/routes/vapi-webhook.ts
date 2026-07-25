@@ -10,7 +10,7 @@
 // inbox, so a call that never books a consultation is still captured rather
 // than lost. Verified with a shared secret because this endpoint is public.
 
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import { and, eq } from "drizzle-orm";
 import { db, clubs, leads } from "@workspace/db";
 import { asyncHandler } from "../lib/http";
@@ -18,6 +18,21 @@ import { logger } from "../lib/logger";
 import { sendEmail } from "../lib/email";
 
 const router: IRouter = Router();
+
+/**
+ * Shared secret gate for the public Vapi endpoints. Returns true when the
+ * request is authorised (or when no secret is configured — dev only). Vapi can
+ * send the secret as a custom header or a bearer token depending on setup.
+ */
+function vapiAuthorized(req: Request): boolean {
+  const expected = process.env["VAPI_WEBHOOK_SECRET"];
+  if (!expected) return true; // no secret set (dev); must be set in production
+  const got =
+    req.get("x-vapi-secret") ??
+    req.get("x-vapi-signature") ??
+    req.get("authorization")?.replace(/^Bearer\s+/i, "");
+  return got === expected;
+}
 
 // Sales leads land on the platform's demo tenant, same as the website form.
 const DEMO_CLUB_SLUG = "augusta-pines";
@@ -142,17 +157,10 @@ router.post(
   asyncHandler(async (req, res) => {
     // Shared-secret check. Vapi sends whatever custom headers the phone
     // number / assistant is configured with; we look for the usual ones.
-    const expected = process.env["VAPI_WEBHOOK_SECRET"];
-    if (expected) {
-      const got =
-        req.get("x-vapi-secret") ??
-        req.get("x-vapi-signature") ??
-        req.get("authorization")?.replace(/^Bearer\s+/i, "");
-      if (got !== expected) {
-        logger.warn("vapi: rejected webhook with bad/missing secret");
-        res.status(401).json({ ok: false });
-        return;
-      }
+    if (!vapiAuthorized(req)) {
+      logger.warn("vapi: rejected webhook with bad/missing secret");
+      res.status(401).json({ ok: false });
+      return;
     }
 
     const body = (req.body ?? {}) as AnyRecord;
@@ -221,6 +229,98 @@ router.post(
     }
 
     res.json({ ok: true });
+  }),
+);
+
+// ── Booking proxy ───────────────────────────────────────────────────────────
+// The Vapi book_consultation tool POSTs a FLAT body here; we assemble the exact
+// nested shape Cal.com's v2 booking API requires and forward it. Doing it here
+// (not Vapi → Cal.com directly) keeps the Cal.com key on the server, guarantees
+// the attendee nesting/types are right, and lets us log the booking.
+
+const CAL_BOOKINGS_URL = "https://api.cal.com/v2/bookings";
+const CAL_API_VERSION = "2024-08-13";
+
+router.post(
+  "/vapi/book",
+  asyncHandler(async (req, res) => {
+    if (!vapiAuthorized(req)) {
+      res.status(401).json({ ok: false, message: "Unauthorized." });
+      return;
+    }
+
+    const apiKey = process.env["CAL_API_KEY"];
+    if (!apiKey) {
+      logger.error("vapi/book: CAL_API_KEY not configured");
+      // Tell the agent to fall back to "the team will confirm by email".
+      res.json({ ok: false, message: "Booking system unavailable — take the caller's preferred time and tell them the team will confirm by email." });
+      return;
+    }
+
+    const body = (req.body ?? {}) as AnyRecord;
+    const start = str(body["start"]);
+    const name = str(body["name"]);
+    const email = str(body["email"]);
+    const timeZone = str(body["timeZone"]);
+    // eventTypeId may arrive as a static body field (string) or from env.
+    const eventTypeId =
+      Number(str(body["eventTypeId"])) || Number(process.env["CAL_EVENT_TYPE_ID"]) || 0;
+
+    const missing = [
+      !start && "start time",
+      !name && "name",
+      !email && "email",
+      !timeZone && "timezone",
+      !eventTypeId && "event type",
+    ].filter(Boolean);
+    if (missing.length) {
+      res.json({ ok: false, message: `Can't book yet — still missing: ${missing.join(", ")}.` });
+      return;
+    }
+
+    try {
+      const calRes = await fetch(CAL_BOOKINGS_URL, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${apiKey}`,
+          "cal-api-version": CAL_API_VERSION,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          start,
+          eventTypeId,
+          attendee: { name, email, timeZone, language: "en" },
+        }),
+      });
+
+      const data = (await calRes.json().catch(() => ({}))) as AnyRecord;
+
+      if (!calRes.ok) {
+        // Cal.com rejected it (slot taken, bad time, etc). Surface a short
+        // reason so the agent can offer another slot instead of claiming success.
+        const reason =
+          str(data["message"]) ??
+          str((data["error"] as AnyRecord | undefined)?.["message"]) ??
+          `status ${calRes.status}`;
+        logger.warn({ status: calRes.status, reason }, "vapi/book: cal.com rejected booking");
+        res.json({ ok: false, message: `Couldn't book that slot: ${reason}. Offer the caller another time from check_availability.` });
+        return;
+      }
+
+      const dataObj = (data["data"] ?? data) as AnyRecord;
+      const bookingUid = str(dataObj["uid"]) ?? str(dataObj["id"]) ?? null;
+      logger.info({ bookingUid, email }, "vapi/book: booking created");
+
+      res.json({
+        ok: true,
+        message: "Booked. A confirmation email is on the way to the caller.",
+        bookingUid,
+        start,
+      });
+    } catch (err) {
+      logger.error({ err }, "vapi/book: request to cal.com failed");
+      res.json({ ok: false, message: "Booking system had a hiccup — take the caller's preferred time and tell them the team will confirm by email." });
+    }
   }),
 );
 

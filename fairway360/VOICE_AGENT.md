@@ -95,34 +95,42 @@ dates (§3.1).
 - Description: "Returns real open consultation slots. Call this BEFORE offering any
   times. Only offer slots this returns, using the exact start value of each."
 
-**Tool 2 — book_consultation**
+**Tool 2 — book_consultation → routes through OUR server, not Cal.com directly.**
+
+Cal.com's booking API needs the attendee nested (`attendee.{name,email,timeZone}`),
+which Vapi's flat schema builder can't cleanly produce. So the tool POSTs a flat
+body to `POST https://fairway360.io/api/vapi/book`; that endpoint assembles the
+correct Cal.com payload, keeps the Cal.com key server-side, and returns a clear
+ok/fail message. See `artifacts/api-server/src/routes/vapi-webhook.ts`.
+
 - Type: API Request · Method: POST
-- URL: `https://api.cal.com/v2/bookings`
+- URL: `https://fairway360.io/api/vapi/book`
 - Headers:
-  - `Authorization`: `Bearer cal_live_YOURKEY`
-  - `cal-api-version`: `2024-08-13`
+  - `x-vapi-secret`: `<same VAPI_WEBHOOK_SECRET as the server>`
   - `Content-Type`: `application/json`
-- Body:
-  ```json
-  {
-    "start": "{{start}}",
-    "eventTypeId": YOUR_EVENT_TYPE_ID,
-    "attendee": {
-      "name": "{{name}}",
-      "email": "{{email}}",
-      "timeZone": "{{timeZone}}"
-    }
-  }
-  ```
+  - (NO Cal.com key/version headers here — the server holds those.)
+- Request Body schema (flat — no nesting to fight): `start`, `name`, `email`,
+  `timeZone`, all string, all required.
 - Parameters the model fills:
-  - `start` — the EXACT start string from the chosen availability slot (do not
-    recompute it)
+  - `start` — the EXACT start string from a check_availability slot (not recomputed)
   - `name`, `email` — the caller's, email confirmed letter-by-letter
   - `timeZone` — same IANA zone used for availability
-- Description: "Books the consultation. Call this ONLY after check_availability and
-  only with a start value that tool returned. After it succeeds, the booking is
-  real — you may confirm it. If it errors, tell the caller the team will confirm
-  by email; do NOT claim it is booked."
+- The endpoint reads the event-type id from `CAL_EVENT_TYPE_ID` on the server, so
+  you don't need to pass it — but a static body field `eventTypeId` also works.
+- Description: "Books the consultation. Call ONLY after check_availability and only
+  with a start value it returned. The response says ok:true (booked — confirm it
+  and mention the email) or ok:false with a reason (offer another slot, or say the
+  team will confirm by email). Never claim booked unless ok:true."
+
+**Server env for booking (add to `/root/fairway360-v2/.env` and compose):**
+```
+CAL_API_KEY=cal_live_...          # Cal.com → Settings → Developer → API Keys
+CAL_EVENT_TYPE_ID=6211486         # the 30-min event
+VAPI_WEBHOOK_SECRET=...           # same value used on the phone number + tools
+```
+Verified locally: bad secret → 401; missing fields → names them; a full payload
+builds the nested Cal.com request and handles Cal.com errors gracefully (the real
+booking round-trip only works from the deployed server, not the dev sandbox).
 
 **Booking prompt rule (add to the prompt):**
 ```
