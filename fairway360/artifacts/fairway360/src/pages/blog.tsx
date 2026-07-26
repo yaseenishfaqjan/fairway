@@ -20,6 +20,16 @@ type Post = {
 
 export const POSTS: Post[] = [
   {
+    slug: "24-7-tee-time-booking-for-members",
+    title: "How to Give Golf Members 24/7 Tee Time Booking Without Adding Staff",
+    excerpt:
+      "Members want to book anytime; the pro shop phone is staffed for a slice of the day. Here's how member self-service and an AI concierge close that gap — against your real tee sheet, without extra staff.",
+    date: "July 26, 2026",
+    dateISO: "2026-07-26",
+    tag: "Member Experience",
+    readMins: 6,
+  },
+  {
     slug: "on-course-food-and-beverage-revenue",
     title: "How On-Course Food & Beverage Ordering Grows Golf Club Revenue",
     excerpt:
