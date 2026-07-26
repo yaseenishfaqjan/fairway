@@ -17,6 +17,8 @@ import { Solutions } from "@/pages/solutions";
 import { Automations } from "@/pages/automations";
 import { Events } from "@/pages/events";
 import { Demo } from "@/pages/demo";
+import { Blog } from "@/pages/blog";
+import { OnCourseFnbRevenue } from "@/pages/blog/on-course-fnb-revenue";
 import { PrivacyPolicy, TermsOfService } from "@/pages/legal";
 import { PortalLogin } from "@/pages/portal/login";
 import { Onboarding } from "@/pages/onboarding";
@@ -76,6 +78,8 @@ function Router() {
       <Route path="/solutions" component={Solutions} />
       <Route path="/automations" component={Automations} />
       <Route path="/events" component={Events} />
+      <Route path="/blog" component={Blog} />
+      <Route path="/blog/on-course-food-and-beverage-revenue" component={OnCourseFnbRevenue} />
       <Route path="/demo" component={Demo} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
