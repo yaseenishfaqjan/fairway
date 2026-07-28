@@ -19,7 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const ROLE_HOME: Record<string, string> = {
-  supervisor: "/portal/supervisor",
+  // Club admins land on the at-a-glance dashboard (their home); the full
+  // operational console is one click away from there.
+  supervisor: "/portal/dashboard",
   employee: "/portal/employees",
   member: "/portal/members",
   super_admin: "/portal/admin",

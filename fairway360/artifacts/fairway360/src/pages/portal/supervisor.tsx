@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Map as MapIcon, UserPlus, CalendarCheck, ListChecks,
@@ -414,6 +415,11 @@ export function SupervisorPortal() {
         {/* Greeting */}
         <motion.div {...fade(0)} className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
+            <Link href="/portal/dashboard">
+              <span className="mb-2 inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-accent hover:underline" data-testid="link-back-dashboard">
+                ← Dashboard
+              </span>
+            </Link>
             <p className="eyebrow mb-2 text-accent">Operations · {clubName}</p>
             <h1 className="font-display text-3xl font-semibold leading-tight text-white sm:text-4xl">Today on the Course</h1>
             <p className="mt-1 text-base text-white/60">Welcome back, {firstName}. Here's the live picture.</p>
