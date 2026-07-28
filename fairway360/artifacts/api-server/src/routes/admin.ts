@@ -6,8 +6,8 @@
 import { Router, type IRouter } from "express";
 import { z } from "zod";
 import { randomBytes } from "node:crypto";
-import { count, desc, eq, max, sql } from "drizzle-orm";
-import { db, chatMessages, clubs, members, staffProfiles, users, clubPlan, clubStatus } from "@workspace/db";
+import { count, desc, eq, gte, max, sql, sum } from "drizzle-orm";
+import { db, chatMessages, clubs, members, orders, staffProfiles, users, clubPlan, clubStatus } from "@workspace/db";
 import { asyncHandler, badRequest, notFound } from "../lib/http";
 import { requireAuth, requireRole } from "../middleware/auth";
 import { provisionClub } from "../lib/provision";
@@ -20,20 +20,62 @@ router.get(
   "/admin/overview",
   ...superAdmin,
   asyncHandler(async (_req, res) => {
-    const [clubRows, [memberCount], [staffCount]] = await Promise.all([
-      db.select({ plan: clubs.plan, status: clubs.status }).from(clubs),
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const [
+      clubRows,
+      [memberCount],
+      [staffCount],
+      [orderAgg],
+      [newMembers30],
+      memberMonths,
+    ] = await Promise.all([
+      db.select({ plan: clubs.plan, status: clubs.status, createdAt: clubs.createdAt }).from(clubs),
       db.select({ n: count() }).from(members),
       db.select({ n: count() }).from(staffProfiles),
+      db.select({ n: count(), revenue: sum(orders.total) }).from(orders),
+      db.select({ n: count() }).from(members).where(gte(members.createdAt, thirtyDaysAgo)),
+      db.select({ createdAt: members.createdAt }).from(members),
     ]);
+
     const byPlan: Record<string, number> = {};
     for (const c of clubRows) byPlan[c.plan] = (byPlan[c.plan] ?? 0) + 1;
+
+    // Growth: new clubs + new members per month for the last 6 calendar months.
+    const months: string[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+    }
+    const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const clubsPerMonth: Record<string, number> = {};
+    const membersPerMonth: Record<string, number> = {};
+    for (const m of months) { clubsPerMonth[m] = 0; membersPerMonth[m] = 0; }
+    for (const c of clubRows) { const k = monthKey(c.createdAt); if (k in clubsPerMonth) clubsPerMonth[k]++; }
+    for (const m of memberMonths) { const k = monthKey(m.createdAt); if (k in membersPerMonth) membersPerMonth[k]++; }
+
+    const monthLabel = (ym: string) => {
+      const [y, mo] = ym.split("-").map(Number);
+      return new Date(y, mo - 1, 1).toLocaleDateString("en-US", { month: "short" });
+    };
+
     res.json({
       totalClubs: clubRows.length,
       activeClubs: clubRows.filter((c) => c.status === "active").length,
       suspendedClubs: clubRows.filter((c) => c.status === "suspended").length,
+      newClubs30d: clubRows.filter((c) => c.createdAt >= thirtyDaysAgo).length,
       totalMembers: Number(memberCount?.n ?? 0),
+      newMembers30d: Number(newMembers30?.n ?? 0),
       totalStaff: Number(staffCount?.n ?? 0),
+      totalOrders: Number(orderAgg?.n ?? 0),
+      totalRevenue: Math.round(Number(orderAgg?.revenue ?? 0) * 100) / 100,
       byPlan,
+      growth: months.map((m) => ({
+        month: m,
+        label: monthLabel(m),
+        clubs: clubsPerMonth[m],
+        members: membersPerMonth[m],
+      })),
     });
   }),
 );
@@ -44,7 +86,7 @@ router.get(
   asyncHandler(async (_req, res) => {
     // Fetch clubs plus per-club aggregates as separate grouped queries (no
     // correlated subqueries — those were silently returning 0), then merge.
-    const [clubRows, memberCounts, staffCounts, lastMsgs] = await Promise.all([
+    const [clubRows, memberCounts, staffCounts, lastMsgs, orderAggs] = await Promise.all([
       db.select().from(clubs).orderBy(desc(clubs.createdAt)),
       db.select({ clubId: members.clubId, n: count() }).from(members).groupBy(members.clubId),
       db
@@ -55,10 +97,16 @@ router.get(
         .select({ clubId: chatMessages.clubId, at: max(chatMessages.createdAt) })
         .from(chatMessages)
         .groupBy(chatMessages.clubId),
+      db
+        .select({ clubId: orders.clubId, n: count(), revenue: sum(orders.total) })
+        .from(orders)
+        .groupBy(orders.clubId),
     ]);
     const memberBy = new Map(memberCounts.map((r) => [r.clubId, Number(r.n)]));
     const staffBy = new Map(staffCounts.map((r) => [r.clubId, Number(r.n)]));
     const lastBy = new Map(lastMsgs.map((r) => [r.clubId, r.at]));
+    const ordersBy = new Map(orderAggs.map((r) => [r.clubId, Number(r.n)]));
+    const revenueBy = new Map(orderAggs.map((r) => [r.clubId, Math.round(Number(r.revenue ?? 0) * 100) / 100]));
     res.json(
       clubRows.map((c) => ({
         id: c.id,
@@ -69,6 +117,8 @@ router.get(
         onboardingCompleted: c.onboardingCompleted,
         memberCount: memberBy.get(c.id) ?? 0,
         staffCount: staffBy.get(c.id) ?? 0,
+        orderCount: ordersBy.get(c.id) ?? 0,
+        revenue: revenueBy.get(c.id) ?? 0,
         lastActivityAt: lastBy.get(c.id) ?? null,
         createdAt: c.createdAt.toISOString(),
       })),

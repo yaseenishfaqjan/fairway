@@ -29,25 +29,65 @@ const api = {
     customFetch<T>(url, { method: "PATCH", credentials: "include", body: JSON.stringify(body) }),
 };
 
+type GrowthPoint = { month: string; label: string; clubs: number; members: number };
 type Overview = {
-  totalClubs: number; activeClubs: number; suspendedClubs: number;
-  totalMembers: number; totalStaff: number; byPlan: Record<string, number>;
+  totalClubs: number; activeClubs: number; suspendedClubs: number; newClubs30d: number;
+  totalMembers: number; newMembers30d: number; totalStaff: number;
+  totalOrders: number; totalRevenue: number;
+  byPlan: Record<string, number>; growth: GrowthPoint[];
 };
 type Tenant = {
   id: string; name: string; slug: string; plan: string; status: string;
   onboardingCompleted: boolean; memberCount: number; staffCount: number;
+  orderCount: number; revenue: number;
   lastActivityAt: string | null; createdAt: string;
 };
+
+const money = (n: number) =>
+  n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
 const PLANS = ["trial", "starter", "pro", "enterprise"];
 const inputCls = "border-white/15 bg-white/5 text-white placeholder:text-white/35";
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({ label, value, sub, tone }: { label: string; value: string | number; sub?: string; tone?: "gold" | "green" }) {
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-      <div className="text-2xl font-semibold text-white">{value}</div>
-      <div className="text-xs uppercase tracking-wider text-white/50">{label}</div>
+      <div className={cn("text-2xl font-semibold tabular-nums", tone === "gold" ? "text-accent" : tone === "green" ? "text-[#46c97e]" : "text-white")}>{value}</div>
+      <div className="text-[11px] uppercase tracking-wider text-white/50">{label}</div>
+      {sub && <div className="mt-1 text-[11px] font-medium text-[#46c97e]">{sub}</div>}
     </div>
+  );
+}
+
+// Platform growth — new clubs (gold bars) and new members (green line) per month.
+function GrowthChart({ data }: { data: GrowthPoint[] }) {
+  const W = 520, H = 150, padL = 28, padR = 10, padT = 16, padB = 22;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  const maxMembers = Math.max(1, ...data.map((d) => d.members));
+  const maxClubs = Math.max(1, ...data.map((d) => d.clubs));
+  const n = data.length;
+  const bandW = innerW / n;
+  const x = (i: number) => padL + bandW * i + bandW / 2;
+  const yMem = (v: number) => padT + innerH - (v / (maxMembers * 1.15)) * innerH;
+  const yClub = (v: number) => padT + innerH - (v / (maxClubs * 1.3)) * innerH;
+  const line = data.map((d, i) => `${i === 0 ? "M" : "L"}${x(i)},${yMem(d.members)}`).join(" ");
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="h-[150px] w-full" role="img" aria-label="Platform growth over the last 6 months">
+      {[0, 0.5, 1].map((f) => (
+        <line key={f} x1={padL} x2={W - padR} y1={padT + innerH * (1 - f)} y2={padT + innerH * (1 - f)} stroke="rgba(255,255,255,0.06)" />
+      ))}
+      {data.map((d, i) => {
+        const bh = (d.clubs / (maxClubs * 1.3)) * innerH;
+        return (
+          <g key={d.month}>
+            <rect x={x(i) - bandW * 0.22} y={padT + innerH - bh} width={bandW * 0.44} height={bh} rx="2" fill="#d7ad42" opacity="0.55" />
+            <text x={x(i)} y={H - 6} textAnchor="middle" fontSize="9" fill="#9bae9f">{d.label}</text>
+          </g>
+        );
+      })}
+      <path d={line} fill="none" stroke="#46c97e" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      {data.map((d, i) => <circle key={d.month} cx={x(i)} cy={yMem(d.members)} r="2.5" fill="#04130c" stroke="#46c97e" strokeWidth="1.5" />)}
+    </svg>
   );
 }
 
@@ -96,13 +136,32 @@ export function AdminPortal() {
         </div>
 
         {o && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <Stat label="Clubs" value={o.totalClubs} />
-            <Stat label="Active" value={o.activeClubs} />
-            <Stat label="Suspended" value={o.suspendedClubs} />
-            <Stat label="Members" value={o.totalMembers} />
-            <Stat label="Staff" value={o.totalStaff} />
-          </div>
+          <>
+            <div>
+              <div className="mb-1 text-[10px] font-semibold uppercase tracking-[1.5px] text-accent">Platform overview</div>
+              <h1 className="font-display text-2xl font-bold">Fairway360 across every club</h1>
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+              <Stat label="Clubs" value={o.totalClubs} sub={o.newClubs30d ? `+${o.newClubs30d} this month` : undefined} tone="gold" />
+              <Stat label="Active" value={o.activeClubs} />
+              <Stat label="Members" value={o.totalMembers} sub={o.newMembers30d ? `+${o.newMembers30d} this month` : undefined} tone="green" />
+              <Stat label="Staff" value={o.totalStaff} />
+              <Stat label="Orders" value={o.totalOrders} />
+              <Stat label="Revenue" value={money(o.totalRevenue)} tone="green" />
+            </div>
+            {o.growth?.some((g) => g.clubs || g.members) && (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-[1.5px] text-accent">Growth · last 6 months</span>
+                  <span className="flex items-center gap-3 text-[11px] text-white/50">
+                    <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-sm bg-accent/60" /> Clubs</span>
+                    <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-[#46c97e]" /> Members</span>
+                  </span>
+                </div>
+                <GrowthChart data={o.growth} />
+              </div>
+            )}
+          </>
         )}
 
         <div className="flex items-center justify-between">
@@ -129,7 +188,7 @@ export function AdminPortal() {
                     {!t.onboardingCompleted && <Badge variant="outline" className="border-accent/30 text-accent">onboarding</Badge>}
                   </div>
                   <div className="text-xs text-white/50">
-                    {t.slug} · {t.memberCount} members · {t.staffCount} staff
+                    {t.slug} · {t.memberCount} members · {t.staffCount} staff · {t.orderCount} orders · {money(t.revenue)}
                     {t.lastActivityAt ? ` · active ${new Date(t.lastActivityAt).toLocaleDateString()}` : ""}
                   </div>
                 </div>
