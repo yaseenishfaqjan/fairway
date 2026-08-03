@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, Map as MapIcon, UserPlus, CalendarCheck, ListChecks,
   Navigation, Phone, Check, MapPin, AlertTriangle, Coffee, Users,
-  ChevronRight, BellRing, MessageSquare, UserCheck, Mail, Plus, Sparkles, Wrench,
+  ChevronRight, BellRing, MessageSquare, UserCheck, Mail, Plus, Sparkles, Wrench, Loader2,
 } from "lucide-react";
 import { PortalShell, type PortalNavItem, type PortalNotification } from "@/components/portal/portal-shell";
 import { CourseMap } from "@/components/portal/course-map";
@@ -35,6 +35,7 @@ import {
   getGetOverviewQueryKey, getListBookingsQueryKey, getListEscalationsQueryKey,
   getGetDelegationQueryKey,
 } from "@workspace/api-client-react";
+import { customFetch } from "@workspace/api-client-react";
 import {
   supervisorAccount,
   type MemberOnCourse, type CourseStatus,
@@ -328,6 +329,30 @@ export function SupervisorPortal() {
       toast({ title: "Escalation resolved", description: `${member}'s issue marked handled.` });
     } catch {
       toast({ title: "Could not resolve", description: "Please try again.", variant: "destructive" });
+    }
+  }
+
+  const [approvingLead, setApprovingLead] = useState<string | null>(null);
+  async function approveMember(id: string, name: string) {
+    if (approvingLead) return;
+    setApprovingLead(id);
+    try {
+      const r = await customFetch<{ emailed: boolean }>(`/api/leads/${id}/approve-member`, {
+        method: "POST",
+        credentials: "include",
+      });
+      queryClient.invalidateQueries({ queryKey: getListLeadsQueryKey() });
+      toast({
+        title: `${name} approved`,
+        description: r.emailed
+          ? "Member account created — a set-password invite was emailed to them."
+          : "Member account created. Email is off, so share the invite link from People.",
+      });
+    } catch (e) {
+      const msg = (e as Error).message.replace(/^HTTP \d+[^:]*:\s*/i, "");
+      toast({ title: "Couldn't approve", description: msg, variant: "destructive" });
+    } finally {
+      setApprovingLead(null);
     }
   }
 
@@ -866,6 +891,19 @@ export function SupervisorPortal() {
                     </div>
 
                     {l.problem && <p className="mt-2 text-xs text-white/55">Needs help with: <span className="text-white/75">{l.problem}</span></p>}
+
+                    {l.source === "Membership Application" && l.status !== "Won" && (
+                      <Button
+                        size="sm"
+                        className="mt-3 w-full bg-[#46c97e]/15 text-[#46c97e] hover:bg-[#46c97e]/25"
+                        disabled={approvingLead === l.id}
+                        onClick={() => approveMember(l.id, l.name)}
+                        data-testid={`button-approve-member-${l.id}`}
+                      >
+                        {approvingLead === l.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Approve as member
+                      </Button>
+                    )}
 
                     <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/10 pt-3">
                       <span className="text-xs text-white/40">{l.time}</span>

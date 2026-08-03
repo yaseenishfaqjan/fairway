@@ -23,6 +23,7 @@ import { MembersBookTeeTimes247 } from "@/pages/blog/members-book-tee-times-24-7
 import { PrivacyPolicy, TermsOfService } from "@/pages/legal";
 import { PortalLogin } from "@/pages/portal/login";
 import { Onboarding } from "@/pages/onboarding";
+import { Join } from "@/pages/join";
 import { ForgotPassword, ResetPassword } from "@/pages/portal/reset";
 import { CursorSpotlight, ScrollProgress } from "@/components/anim/ambient";
 import { Analytics } from "@/components/analytics";
@@ -86,6 +87,7 @@ function Router() {
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms" component={TermsOfService} />
       <Route path="/onboarding" component={Onboarding} />
+      <Route path="/join/:slug" component={Join} />
       <Route path="/portal" component={PortalLogin} />
       <Route path="/portal/forgot" component={ForgotPassword} />
       <Route path="/portal/reset" component={ResetPassword} />

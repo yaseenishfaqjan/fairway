@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
-import { db, clubs, leads } from "@workspace/db";
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+import { db, clubs, leads, users } from "@workspace/db";
 import { CreateDemoRequestBody } from "@workspace/api-zod";
-import { asyncHandler, notFound } from "../lib/http";
-import { sendDemoConfirmation, notifySalesOfDemo } from "../lib/email";
+import { asyncHandler, badRequest, notFound } from "../lib/http";
+import { sendDemoConfirmation, notifySalesOfDemo, sendEmail } from "../lib/email";
 import { rateLimit } from "../lib/rate-limit";
 import { captureClientError } from "../lib/monitoring";
 import { resolveTenantForRequest } from "../lib/tenant";
@@ -79,6 +80,88 @@ router.post(
     void notifySalesOfDemo(body);
 
     res.json({ ok: true });
+  }),
+);
+
+// Member self-signup — a prospective member applies to a specific club. We
+// capture it as a "Membership" lead on that club's tenant (the club approves it
+// from the Leads tab, which then creates the member + invite). Members are never
+// created directly here: the club always controls its own roster.
+const joinLimiter = rateLimit({ windowMs: 60 * 60_000, max: 10, key: "join" });
+const JoinBody = z.object({
+  slug: z.string().trim().min(1).max(60),
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(160),
+  phone: z.string().trim().max(40).optional(),
+  message: z.string().trim().max(600).optional(),
+});
+
+router.post(
+  "/public/join",
+  joinLimiter,
+  asyncHandler(async (req, res) => {
+    const body = JoinBody.parse(req.body);
+    const slug = body.slug.toLowerCase();
+
+    const [club] = await db
+      .select({ id: clubs.id, name: clubs.name })
+      .from(clubs)
+      .where(eq(clubs.slug, slug));
+    if (!club) throw notFound("We couldn't find that club.");
+
+    const email = body.email.toLowerCase();
+
+    // If they already have any account at this club, don't create a duplicate
+    // lead — tell them to sign in instead. (Same email can exist at other clubs.)
+    const [existing] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.clubId, club.id), eq(users.email, email)));
+    if (existing) {
+      throw badRequest("You already have an account at this club — please sign in or reset your password.");
+    }
+
+    await db.insert(leads).values({
+      clubId: club.id,
+      name: body.name,
+      contactName: body.name,
+      email,
+      phone: body.phone ?? null,
+      source: "Membership Application",
+      interest: "Membership",
+      status: "New",
+      problem: body.message ?? null,
+    });
+
+    // Notify the club's admin(s) that someone applied. Best-effort; never blocks.
+    const admins = await db
+      .select({ email: users.email })
+      .from(users)
+      .where(and(eq(users.clubId, club.id), eq(users.role, "supervisor")));
+    for (const a of admins) {
+      void sendEmail({
+        to: a.email,
+        replyTo: email,
+        subject: `New membership application: ${body.name}`,
+        html:
+          `<p>${body.name} applied to join ${club.name}.</p>` +
+          `<table>` +
+          `<tr><td style="padding:4px 12px 4px 0;color:#5b6b63">Email</td><td>${email}</td></tr>` +
+          (body.phone ? `<tr><td style="padding:4px 12px 4px 0;color:#5b6b63">Phone</td><td>${body.phone}</td></tr>` : "") +
+          (body.message ? `<tr><td style="padding:4px 12px 4px 0;color:#5b6b63;vertical-align:top">Message</td><td>${body.message}</td></tr>` : "") +
+          `</table>` +
+          `<p style="margin-top:16px">Approve them from your Leads tab to create their member account and send an invite.</p>`,
+      });
+    }
+
+    // Acknowledge to the applicant.
+    void sendEmail({
+      to: email,
+      subject: `Your application to ${club.name}`,
+      html: `<p>Thanks, ${body.name} — ${club.name} has received your membership application. They'll be in touch, and once approved you'll get an email to set up your member account.</p>`,
+    });
+
+    res.json({ ok: true, clubName: club.name });
   }),
 );
 

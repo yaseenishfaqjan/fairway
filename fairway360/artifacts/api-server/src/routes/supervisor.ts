@@ -733,4 +733,64 @@ router.post(
   }),
 );
 
+// Approve a membership application (a "Membership Application" lead) → creates
+// the member account + sends the set-password invite, and marks the lead Won.
+router.post(
+  "/leads/:id/approve-member",
+  ...supervisor,
+  asyncHandler<{ id: string }>(async (req, res) => {
+    const { clubId, userId } = req.auth!;
+    const [lead] = await db
+      .select()
+      .from(leads)
+      .where(and(eq(leads.id, req.params.id), eq(leads.clubId, clubId)));
+    if (!lead) throw notFound("Application not found.");
+    if (!lead.email) throw badRequest("This application has no email to invite.");
+
+    const normEmail = lead.email.toLowerCase().trim();
+    const [dup] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.clubId, clubId), eq(users.email, normEmail)));
+    if (dup) throw badRequest("Someone with that email already has an account at this club.");
+
+    const memberName = lead.contactName ?? lead.name;
+    const [club] = await db.select({ name: clubs.name }).from(clubs).where(eq(clubs.id, clubId));
+    const [user] = await db
+      .insert(users)
+      .values({
+        clubId,
+        email: normEmail,
+        role: "member",
+        name: memberName,
+        initials: initialsOf(memberName),
+        phone: lead.phone ?? null,
+        status: "active",
+        passwordHash: null,
+      })
+      .returning();
+    const [{ c }] = await db
+      .select({ c: count() })
+      .from(members)
+      .where(eq(members.clubId, clubId));
+    await db.insert(members).values({
+      clubId,
+      userId: user.id,
+      memberNumber: `M-${String((c ?? 0) + 1).padStart(4, "0")}`,
+      tier: "Standard",
+      memberSince: new Date().getFullYear(),
+      balance: "0",
+    });
+    await db.update(leads).set({ status: "Won" }).where(eq(leads.id, lead.id));
+
+    const invite = await issueInvite(user.id, memberName, normEmail, club?.name ?? "your club", {
+      clubId,
+      role: "member",
+      department: null,
+      createdBy: userId,
+    });
+    res.status(201).json({ id: user.id, inviteLink: invite.link, emailed: invite.emailed });
+  }),
+);
+
 export default router;
