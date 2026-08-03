@@ -38,6 +38,7 @@ type OrdersAnalytics = {
   today: { orders: number; revenue: number; delivered: number; active: number };
   yesterday: { orders: number; revenue: number; delivered: number; active: number };
   series: DayPoint[];
+  topItems: { name: string; qty: number; revenue: number }[];
 };
 type MenuItem = {
   id: string; name: string; description: string | null; price: number;
@@ -344,6 +345,23 @@ function DashboardSection({ onJump }: { onJump: (s: SectionKey, filter?: string)
           ? <Empty>No orders yet.</Empty>
           : <div>{orders.slice(0, 4).map((o) => <OrderRow key={o.id} order={o} tz={tz} onClick={() => onJump("orders")} />)}</div>}
       </Card>
+
+      {/* Top sellers — real "know what to stock" insight from the week's orders */}
+      {(a?.topItems?.length ?? 0) > 0 && (
+        <Card>
+          <Eyebrow className="mb-2">Top Sellers · 7 Days</Eyebrow>
+          <div className="space-y-1.5">
+            {a!.topItems.map((it, i) => (
+              <div key={it.name} className="flex items-center gap-3" data-testid={`top-item-${i}`}>
+                <span className="w-5 shrink-0 text-center text-xs font-bold text-accent tabular-nums">{i + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-sm">{it.name}</span>
+                <span className="shrink-0 text-xs text-white/45 tabular-nums">{it.qty} sold</span>
+                <span className="w-16 shrink-0 text-right text-sm font-semibold tabular-nums">{money(it.revenue)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

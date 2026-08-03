@@ -23,6 +23,7 @@ import {
   members,
   menuItems,
   orders,
+  orderLines,
   staffProfiles,
   tasks,
   teeTimes,
@@ -1148,6 +1149,13 @@ router.get(
       .from(orders)
       .where(and(eq(orders.clubId, clubId), gte(orders.placedAt, since)));
 
+    // Best-selling items across the same window — order lines summed by name.
+    const lineRows = await db
+      .select({ name: orderLines.nameSnapshot, qty: orderLines.qty, price: orderLines.priceSnapshot, placedAt: orders.placedAt })
+      .from(orderLines)
+      .innerJoin(orders, eq(orderLines.orderId, orders.id))
+      .where(and(eq(orderLines.clubId, clubId), gte(orders.placedAt, since)));
+
     // The 7 club-local days ending today (oldest → newest), zero-filled so the
     // dashboard chart always has 7 points even on a quiet week.
     const days = Array.from({ length: 7 }, (_, i) => dayKeyOffsetTz(tz, i - 6));
@@ -1193,6 +1201,19 @@ router.get(
     for (const day of days) byDay[day].revenue = round(byDay[day].revenue);
     for (const b of [today, yesterday]) b.revenue = round(b.revenue);
 
+    // Top 5 items by quantity sold in the window (club-local days only).
+    const itemAgg: Record<string, { qty: number; revenue: number }> = {};
+    for (const l of lineRows) {
+      if (!window.has(dayKeyTz(l.placedAt, tz))) continue;
+      const a = (itemAgg[l.name] ??= { qty: 0, revenue: 0 });
+      a.qty += l.qty;
+      a.revenue += l.qty * Number(l.price);
+    }
+    const topItems = Object.entries(itemAgg)
+      .map(([name, a]) => ({ name, qty: a.qty, revenue: round(a.revenue) }))
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 5);
+
     res.json({
       timezone: tz,
       orders7d: Object.values(byDay).reduce((s, d) => s + d.orders, 0),
@@ -1209,6 +1230,7 @@ router.get(
         orders: byDay[day].orders,
         revenue: byDay[day].revenue,
       })),
+      topItems,
       peakHours: Object.entries(byHour)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)

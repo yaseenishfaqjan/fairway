@@ -507,6 +507,14 @@ function InvitesTab() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const invitesQ = useQuery({ queryKey: ["manage", "invites"], queryFn: () => api.get<Invite[]>("/api/invites") });
+  const settingsQ = useQuery({ queryKey: ["manage", "settings"], queryFn: () => api.get<ClubSettings>("/api/tenant/settings") });
+
+  const joinUrl = settingsQ.data ? `${window.location.origin}/join/${settingsQ.data.slug}` : "";
+  async function copyJoinLink() {
+    if (!joinUrl) return;
+    try { await navigator.clipboard.writeText(joinUrl); toast({ title: "Join link copied", description: "Share it on your website, emails, or at the club." }); }
+    catch { toast({ title: "Copy failed", description: joinUrl, variant: "destructive" }); }
+  }
 
   const revoke = useMutation({
     mutationFn: (id: string) => api.del(`/api/invites/${id}`),
@@ -533,6 +541,16 @@ function InvitesTab() {
 
   return (
     <div className="space-y-3">
+      {/* Public member-application link — the club shares this so prospects can apply. */}
+      <Card className="space-y-2">
+        <h3 className="text-lg font-semibold">Your member sign-up link</h3>
+        <p className="text-sm text-white/55">Share this so prospective members can apply. Applications land in your Leads tab, where you approve them with one click.</p>
+        <div className="flex items-center gap-2">
+          <code className="min-w-0 flex-1 truncate rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-accent" data-testid="text-join-link">{joinUrl || "…"}</code>
+          <Button size="sm" onClick={copyJoinLink} disabled={!joinUrl} data-testid="button-copy-join-link"><Link2 className="mr-1 h-4 w-4" /> Copy</Button>
+        </div>
+      </Card>
+
       <h3 className="text-lg font-semibold">Invite links</h3>
       <p className="text-sm text-white/55">Created when you add staff or members. Links expire after 7 days and are single-use.</p>
       {(invitesQ.data ?? []).map((i) => (
