@@ -40,6 +40,17 @@ export function Demo() {
   const presetProblem = VALID_PROBLEMS.has(problemParam) ? problemParam : "";
   const topic = (params.get("topic") ?? "").slice(0, 60);
 
+  // Plan-first entry from /pricing: /demo?plan=core|pro|elite|enterprise.
+  // The plan rides along on the lead so sales knows what they asked about.
+  const PLAN_LABELS: Record<string, string> = {
+    core: "Fairway Core — $497/mo",
+    pro: "Fairway Pro — $997/mo",
+    elite: "Fairway Elite — $1,997/mo",
+    enterprise: "Fairway Enterprise — from $2,997/mo",
+  };
+  const planParam = (params.get("plan") ?? "").toLowerCase();
+  const planLabel = PLAN_LABELS[planParam] ?? "";
+
   const form = useForm<z.infer<typeof demoSchema>>({
     resolver: zodResolver(demoSchema),
     defaultValues: {
@@ -62,7 +73,9 @@ export function Demo() {
           email: values.email,
           phone: values.phoneNumber,
           businessType: values.businessType,
-          problem: values.problem,
+          // The interested plan travels inside the problem text so it shows on
+          // the lead and in the sales notification email.
+          problem: planLabel ? `${values.problem} [Interested plan: ${planLabel}]` : values.problem,
           volume: values.volume,
         },
       });
@@ -95,6 +108,11 @@ export function Demo() {
           {topic && (
             <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-sm font-medium text-[hsl(38_55%_40%)]">
               Tailored to: {topic}
+            </p>
+          )}
+          {planLabel && (
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-sm font-medium text-[hsl(38_55%_40%)]">
+              You're asking about: {planLabel}. We'll walk you through onboarding on the call.
             </p>
           )}
         </div>

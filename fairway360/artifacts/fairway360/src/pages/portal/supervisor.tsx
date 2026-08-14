@@ -109,6 +109,49 @@ const leadStatusDark: Record<string, string> = {
 
 const LEAD_STATUSES = ["New", "Contacted", "Tour Booked", "Won", "Lost"] as const;
 
+/** CRM extras that ride along with the generated Lead shape. */
+type LeadExtras = { notes?: string | null; followupCount?: number };
+
+/** Inline notes editor on a lead card — saves via PATCH /leads/:id/notes. */
+function LeadNotes({ id, initial }: { id: string; initial: string | null | undefined }) {
+  const { toast } = useToast();
+  const [value, setValue] = useState(initial ?? "");
+  const [saving, setSaving] = useState(false);
+  const dirty = value !== (initial ?? "");
+  async function save() {
+    setSaving(true);
+    try {
+      await customFetch(`/api/leads/${id}/notes`, {
+        method: "PATCH",
+        body: JSON.stringify({ notes: value.trim() || null }),
+      });
+      toast({ title: "Notes saved" });
+    } catch {
+      toast({ title: "Couldn't save notes", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
+  return (
+    <div className="mt-3">
+      <Textarea
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Notes — calls, next steps…"
+        rows={2}
+        maxLength={4000}
+        className="border-white/15 bg-white/5 text-sm text-white placeholder:text-white/35"
+        data-testid={`lead-notes-${id}`}
+      />
+      {dirty && (
+        <Button size="sm" variant="outline" className="mt-2 border-white/15" disabled={saving} onClick={() => void save()}>
+          {saving && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />} Save notes
+        </Button>
+      )}
+    </div>
+  );
+}
+
 const fade = (i = 0) => ({
   initial: { opacity: 0, y: 16 },
   whileInView: { opacity: 1, y: 0 },
@@ -891,6 +934,15 @@ export function SupervisorPortal() {
                     </div>
 
                     {l.problem && <p className="mt-2 text-xs text-white/55">Needs help with: <span className="text-white/75">{l.problem}</span></p>}
+
+                    {((l as typeof l & LeadExtras).followupCount ?? 0) > 0 && (
+                      <p className="mt-2 text-[11px] text-white/45">
+                        {(l as typeof l & LeadExtras).followupCount} automatic follow-up email
+                        {((l as typeof l & LeadExtras).followupCount ?? 0) > 1 ? "s" : ""} sent
+                      </p>
+                    )}
+
+                    <LeadNotes id={l.id} initial={(l as typeof l & LeadExtras).notes} />
 
                     {l.source === "Membership Application" && l.status !== "Won" && (
                       <Button

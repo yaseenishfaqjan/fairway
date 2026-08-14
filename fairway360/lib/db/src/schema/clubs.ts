@@ -3,7 +3,8 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { pk, timestamps } from "./_helpers";
 
-export const clubPlan = pgEnum("club_plan", ["trial", "starter", "pro", "enterprise"]);
+// Sales tiers: Fairway Core / Pro / Elite / Enterprise (+ legacy "starter").
+export const clubPlan = pgEnum("club_plan", ["trial", "starter", "core", "pro", "elite", "enterprise"]);
 export const clubStatus = pgEnum("club_status", ["active", "suspended", "cancelled"]);
 
 /** Tenant root. Every business table carries a club_id referencing this table. */
@@ -24,6 +25,9 @@ export const clubs = pgTable("clubs", {
   countryCode: text("country_code").notNull().default("US"),
   phone: text("phone"),
   address: text("address"),
+  // Public review destination (e.g. the club's Google review URL). When set,
+  // delivered F&B orders trigger a throttled review-request email (lib/reviews.ts).
+  reviewLink: text("review_link"),
   onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
   onboardingStep: text("onboarding_step"), // last completed wizard step (1-6)
   ...timestamps,

@@ -46,7 +46,7 @@ type Tenant = {
 const money = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 
-const PLANS = ["trial", "starter", "pro", "enterprise"];
+const PLANS = ["trial", "core", "pro", "elite", "enterprise"];
 const inputCls = "border-white/15 bg-white/5 text-white placeholder:text-white/35";
 
 function Stat({ label, value, sub, tone }: { label: string; value: string | number; sub?: string; tone?: "gold" | "green" }) {

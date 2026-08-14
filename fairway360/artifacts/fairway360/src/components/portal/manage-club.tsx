@@ -60,6 +60,7 @@ type Invite = { id: string; email: string | null; name: string | null; role: str
 type ClubSettings = {
   name: string; slug: string; timezone: string; currency: string;
   primaryColor: string; accentColor: string; phone: string | null; address: string | null;
+  reviewLink?: string | null;
 };
 
 const TABS = [
@@ -516,6 +517,13 @@ function InvitesTab() {
     catch { toast({ title: "Copy failed", description: joinUrl, variant: "destructive" }); }
   }
 
+  const clubPageUrl = settingsQ.data ? `${window.location.origin}/club/${settingsQ.data.slug}` : "";
+  async function copyClubPage() {
+    if (!clubPageUrl) return;
+    try { await navigator.clipboard.writeText(clubPageUrl); toast({ title: "Club page link copied", description: "Link it from your website — visitors can chat with your AI and send tee-time, membership, and event inquiries." }); }
+    catch { toast({ title: "Copy failed", description: clubPageUrl, variant: "destructive" }); }
+  }
+
   const revoke = useMutation({
     mutationFn: (id: string) => api.del(`/api/invites/${id}`),
     onSuccess: () => {
@@ -548,6 +556,16 @@ function InvitesTab() {
         <div className="flex items-center gap-2">
           <code className="min-w-0 flex-1 truncate rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-accent" data-testid="text-join-link">{joinUrl || "…"}</code>
           <Button size="sm" onClick={copyJoinLink} disabled={!joinUrl} data-testid="button-copy-join-link"><Link2 className="mr-1 h-4 w-4" /> Copy</Button>
+        </div>
+      </Card>
+
+      {/* Public club page — AI concierge + tee-time / membership / event inquiries. */}
+      <Card className="space-y-2">
+        <h3 className="text-lg font-semibold">Your public club page</h3>
+        <p className="text-sm text-white/55">Your club's AI-powered web page: visitors chat with your concierge and send tee-time, membership, and private-event inquiries — every one lands in your Leads tab with automatic email follow-up.</p>
+        <div className="flex items-center gap-2">
+          <code className="min-w-0 flex-1 truncate rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-accent" data-testid="text-club-page-link">{clubPageUrl || "…"}</code>
+          <Button size="sm" onClick={copyClubPage} disabled={!clubPageUrl} data-testid="button-copy-club-page"><Link2 className="mr-1 h-4 w-4" /> Copy</Button>
         </div>
       </Card>
 
@@ -647,6 +665,7 @@ function SettingsTab() {
         name: s?.name, timezone: s?.timezone, currency: s?.currency,
         primaryColor: s?.primaryColor, accentColor: s?.accentColor,
         phone: s?.phone || null, address: s?.address || null,
+        reviewLink: s?.reviewLink || null,
       }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["manage", "settings"] });
@@ -679,6 +698,13 @@ function SettingsTab() {
       </div>
       <Input className={inputCls} placeholder="Phone" value={s.phone ?? ""} onChange={(e) => set({ phone: e.target.value })} />
       <Input className={inputCls} placeholder="Address" value={s.address ?? ""} onChange={(e) => set({ address: e.target.value })} />
+      <div>
+        <div className="mb-1 text-xs text-white/60">
+          Review link — e.g. your Google review URL. When set, delivered orders trigger an automatic
+          "leave us a review" email (max once per member / 30 days).
+        </div>
+        <Input className={inputCls} placeholder="https://g.page/r/…/review" value={s.reviewLink ?? ""} onChange={(e) => set({ reviewLink: e.target.value })} data-testid="input-review-link" />
+      </div>
       <Button disabled={save.isPending} onClick={() => save.mutate()} data-testid="button-save-settings">
         {save.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />} Save settings
       </Button>

@@ -68,6 +68,9 @@ export const members = pgTable("members", {
   handicap: numeric("handicap", { precision: 3, scale: 1 }),
   roundsThisYear: integer("rounds_this_year").notNull().default(0),
   balance: numeric("balance", { precision: 10, scale: 2 }).notNull().default("0"),
+  // Review automation throttle: at most one review-request email per member
+  // per 30 days (lib/reviews.ts).
+  lastReviewRequestAt: timestamp("last_review_request_at", { withTimezone: true }),
   ...timestamps,
 });
 

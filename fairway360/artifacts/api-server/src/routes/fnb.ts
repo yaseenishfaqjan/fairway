@@ -8,6 +8,7 @@ import { loadOrders, loadOrder } from "../lib/orders";
 import { publishOrderEvent } from "../lib/realtime";
 import { sendSms } from "../lib/sms";
 import { notify } from "../lib/notify";
+import { maybeSendReviewRequest } from "../lib/reviews";
 
 const router: IRouter = Router();
 const staff = [requireAuth, requireStaff];
@@ -66,6 +67,12 @@ router.patch(
           link: "/portal/members",
         });
       }
+    }
+
+    // Review automation: a delivered order may trigger a throttled
+    // review-request email (only when the club has a review link configured).
+    if (status === "Delivered") {
+      void maybeSendReviewRequest(clubId, updated[0].memberId);
     }
 
     const order = await loadOrder(clubId, req.params.id);

@@ -5,7 +5,7 @@
 //   config + stats, and broadcast messaging.
 // Every query is scoped to req.auth.clubId (from the session, never input).
 
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Response } from "express";
 import { z } from "zod";
 import { and, asc, count, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import {
@@ -19,6 +19,7 @@ import {
   escalations,
   inviteLinks,
   knowledgeBase,
+  leads,
   memberPreferences,
   members,
   menuItems,
@@ -1287,6 +1288,130 @@ router.post(
       }
     }
     res.status(201).json({ recipients: recipients.length });
+  }),
+);
+
+// ── CSV exports ("custom reporting") ────────────────────────────────────────
+// GET /export/orders | /export/members | /export/leads → text/csv download.
+// Everything is club-scoped from the session, same as every other route here.
+
+function csvCell(v: unknown): string {
+  if (v == null) return "";
+  const s = v instanceof Date ? v.toISOString() : String(v);
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+function toCsv(header: string[], rows: unknown[][]): string {
+  return [header, ...rows].map((r) => r.map(csvCell).join(",")).join("\n");
+}
+function sendCsv(res: Response, name: string, csv: string): void {
+  res.setHeader("content-type", "text/csv; charset=utf-8");
+  res.setHeader("content-disposition", `attachment; filename="${name}"`);
+  res.send(csv);
+}
+
+router.get(
+  "/export/orders",
+  ...supervisor,
+  asyncHandler(async (req, res) => {
+    const { clubId } = req.auth!;
+    const rows = await db
+      .select({ o: orders, memberName: users.name })
+      .from(orders)
+      .leftJoin(members, eq(orders.memberId, members.id))
+      .leftJoin(users, eq(members.userId, users.id))
+      .where(eq(orders.clubId, clubId))
+      .orderBy(desc(orders.placedAt));
+    const lines = await db
+      .select()
+      .from(orderLines)
+      .where(eq(orderLines.clubId, clubId));
+    const byOrder = new Map<string, string>();
+    for (const l of lines) {
+      byOrder.set(
+        l.orderId,
+        [byOrder.get(l.orderId), `${l.qty}x ${l.nameSnapshot}`].filter(Boolean).join("; "),
+      );
+    }
+    sendCsv(
+      res,
+      "orders.csv",
+      toCsv(
+        ["order_id", "placed_at", "member", "status", "hole", "total_usd", "items"],
+        rows.map(({ o, memberName }) => [
+          o.id,
+          o.placedAt,
+          memberName,
+          o.status,
+          o.hole,
+          o.total,
+          byOrder.get(o.id) ?? "",
+        ]),
+      ),
+    );
+  }),
+);
+
+router.get(
+  "/export/members",
+  ...supervisor,
+  asyncHandler(async (req, res) => {
+    const { clubId } = req.auth!;
+    const rows = await db
+      .select({ m: members, u: users })
+      .from(members)
+      .innerJoin(users, eq(members.userId, users.id))
+      .where(eq(members.clubId, clubId))
+      .orderBy(asc(users.name));
+    sendCsv(
+      res,
+      "members.csv",
+      toCsv(
+        ["member_number", "name", "email", "phone", "tier", "member_since", "rounds_this_year", "balance_usd", "status"],
+        rows.map(({ m, u }) => [
+          m.memberNumber,
+          u.name,
+          u.email,
+          u.phone,
+          m.tier,
+          m.memberSince,
+          m.roundsThisYear,
+          m.balance,
+          u.status,
+        ]),
+      ),
+    );
+  }),
+);
+
+router.get(
+  "/export/leads",
+  ...supervisor,
+  asyncHandler(async (req, res) => {
+    const { clubId } = req.auth!;
+    const rows = await db
+      .select()
+      .from(leads)
+      .where(eq(leads.clubId, clubId))
+      .orderBy(desc(leads.createdAt));
+    sendCsv(
+      res,
+      "leads.csv",
+      toCsv(
+        ["created_at", "name", "contact", "email", "phone", "source", "interest", "status", "followups_sent", "notes"],
+        rows.map((l) => [
+          l.createdAt,
+          l.name,
+          l.contactName,
+          l.email,
+          l.phone,
+          l.source,
+          l.interest,
+          l.status,
+          l.followupCount,
+          l.notes,
+        ]),
+      ),
+    );
   }),
 );
 

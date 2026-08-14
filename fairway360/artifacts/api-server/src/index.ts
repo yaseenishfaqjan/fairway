@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { installProcessHandlers } from "./lib/monitoring";
+import { startFollowupEngine } from "./lib/followups";
 
 installProcessHandlers();
 
@@ -25,4 +26,6 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+  // In-process automation: lead follow-up emails (no-op when email is off).
+  startFollowupEngine();
 });

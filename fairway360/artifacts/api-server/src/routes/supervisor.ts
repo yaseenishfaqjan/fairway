@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { z } from "zod";
 import {
   and,
   asc,
@@ -376,7 +377,16 @@ router.get(
       .from(leads)
       .where(eq(leads.clubId, clubId))
       .orderBy(desc(leads.createdAt));
-    res.json(rows.map(toLead));
+    // CRM extras (notes + automated follow-up trail) ride along with the
+    // generated Lead shape — additive, so older clients simply ignore them.
+    res.json(
+      rows.map((l) => ({
+        ...toLead(l),
+        notes: l.notes ?? null,
+        followupCount: l.followupCount,
+        lastFollowupAt: l.lastFollowupAt?.toISOString() ?? null,
+      })),
+    );
   }),
 );
 
@@ -393,6 +403,24 @@ router.patch(
       .returning();
     if (!row) throw notFound("Lead not found.");
     res.json(toLead(row));
+  }),
+);
+
+// CRM: free-text notes on a lead (call summaries, next steps, context).
+const LeadNotesBody = z.object({ notes: z.string().max(4000).nullable() });
+router.patch(
+  "/leads/:id/notes",
+  ...supervisor,
+  asyncHandler<{ id: string }>(async (req, res) => {
+    const { clubId } = req.auth!;
+    const { notes } = LeadNotesBody.parse(req.body);
+    const [row] = await db
+      .update(leads)
+      .set({ notes, updatedAt: new Date() })
+      .where(and(eq(leads.id, req.params.id), eq(leads.clubId, clubId)))
+      .returning({ id: leads.id, notes: leads.notes });
+    if (!row) throw notFound("Lead not found.");
+    res.json({ ok: true, notes: row.notes });
   }),
 );
 

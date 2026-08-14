@@ -120,6 +120,7 @@ router.get(
       accentColor: club.accentColor,
       phone: club.phone,
       address: club.address,
+      reviewLink: club.reviewLink,
       plan: club.plan,
       onboardingCompleted: club.onboardingCompleted,
     });
@@ -136,6 +137,8 @@ const UpdateSettingsBody = z.object({
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   phone: z.string().max(30).nullable().optional(),
   address: z.string().max(300).nullable().optional(),
+  // Public review URL (e.g. Google review link) — powers review automation.
+  reviewLink: z.string().url().max(500).nullable().optional(),
 });
 
 router.patch(

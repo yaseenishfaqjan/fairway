@@ -35,6 +35,13 @@ export const leads = pgTable("leads", {
   businessType: text("business_type"),
   problem: text("problem"),
   volume: text("volume"),
+  // CRM: free-text notes staff keep on the lead.
+  notes: text("notes"),
+  // Automated email follow-up engine (lib/followups.ts): how many nurture
+  // emails have gone out and when the last one was sent. Stops at the cap or
+  // as soon as the lead leaves New/Contacted.
+  followupCount: integer("followup_count").notNull().default(0),
+  lastFollowupAt: timestamp("last_followup_at", { withTimezone: true }),
   ...timestamps,
 });
 

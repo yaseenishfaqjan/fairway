@@ -35,7 +35,15 @@ function vapiAuthorized(req: Request): boolean {
 }
 
 // Sales leads land on the platform's demo tenant, same as the website form.
+// Per-club AI receptionists (provisioned during onboarding) point their Vapi
+// Server URL at /api/vapi/webhook?club=<slug> so calls become that club's leads.
 const DEMO_CLUB_SLUG = "augusta-pines";
+
+function clubSlugFor(req: Request): string {
+  const q = req.query["club"];
+  const slug = typeof q === "string" ? q.trim().toLowerCase() : "";
+  return slug || DEMO_CLUB_SLUG;
+}
 
 type AnyRecord = Record<string, unknown>;
 
@@ -184,7 +192,7 @@ router.post(
       const [club] = await db
         .select({ id: clubs.id })
         .from(clubs)
-        .where(eq(clubs.slug, DEMO_CLUB_SLUG));
+        .where(eq(clubs.slug, clubSlugFor(req)));
 
       if (club) {
         // Vapi can redeliver a report; don't create the same lead twice.
