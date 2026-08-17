@@ -126,7 +126,7 @@ export function AdminPortal() {
   const o = overviewQ.data;
   return (
     <div className="min-h-dvh bg-[#04130c] px-4 py-8 text-white">
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className={cn("mx-auto space-y-6", section === "platform" ? "max-w-5xl" : "max-w-7xl")}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <PortalLogo size="sm" />

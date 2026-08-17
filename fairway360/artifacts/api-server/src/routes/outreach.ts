@@ -144,7 +144,7 @@ router.get(
       .from(prospects)
       .where(wheres.length ? and(...wheres) : undefined)
       .orderBy(desc(prospects.score), desc(prospects.updatedAt))
-      .limit(500);
+      .limit(2000);
     res.json(rows.map(serialize));
   }),
 );
