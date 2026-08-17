@@ -69,6 +69,7 @@ const ProspectBody = z.object({
   coursesCount: z.number().int().min(1).max(100).nullable().optional(),
   membershipSize: z.string().trim().max(60).nullable().optional(),
   segment: z.enum(["A", "B", "C", "D", "E"]).optional(),
+  publicEmail: z.string().trim().max(160).nullable().optional(),
   dmName: z.string().trim().max(120).nullable().optional(),
   dmTitle: z.string().trim().max(120).nullable().optional(),
   dmPhone: z.string().trim().max(40).nullable().optional(),
@@ -362,59 +363,136 @@ router.get(
 );
 
 // ── Bulk import + CSV export ────────────────────────────────────────────────
-// Import format (one per line, header optional):
-// clubName,city,state,timezone,clubType,segment,website,mainPhone,dmName,dmTitle,dmPhone,dmEmail
+// Header-driven: the first row names the columns, in any order. Recognised
+// columns: clubName, city, state, mainPhone, website, email, clubType,
+// segment, timezone, dmName, dmTitle, dmPhone, dmEmail, membershipSize,
+// coursesCount, notes. Only clubName is required. Timezone and segment are
+// derived from state / clubType when not supplied. Proper CSV parsing handles
+// quoted fields containing commas and newlines.
 
-const BulkImportBody = z.object({ csv: z.string().min(1).max(500_000) });
+const BulkImportBody = z.object({ csv: z.string().min(1).max(5_000_000) });
+
+/** RFC-4180-ish CSV parser: quotes, escaped quotes (""), embedded commas & newlines. */
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ",") {
+      row.push(field); field = "";
+    } else if (c === "\n") {
+      row.push(field); rows.push(row); row = []; field = "";
+    } else if (c !== "\r") {
+      field += c;
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter((r) => r.some((v) => v.trim()));
+}
+
+/** US state (2-letter) → caller time-zone window. Dominant zone per state. */
+const STATE_TZ: Record<string, "ET" | "CT" | "MT" | "PT"> = {};
+for (const s of "CT DC DE FL GA IN KY MA MD ME MI NC NH NJ NY OH PA RI SC VA VT WV".split(" ")) STATE_TZ[s] = "ET";
+for (const s of "AL AR IA IL KS LA MN MO MS ND NE OK SD TN TX WI".split(" ")) STATE_TZ[s] = "CT";
+for (const s of "AZ CO ID MT NM UT WY".split(" ")) STATE_TZ[s] = "MT";
+for (const s of "CA NV OR WA AK HI".split(" ")) STATE_TZ[s] = "PT";
+
+/** Club type → priority segment (A private · B resort · C multi · D public · E muni). */
+function segmentFor(clubType: string | null): "A" | "B" | "C" | "D" | "E" {
+  const t = (clubType ?? "").toLowerCase();
+  if (t.includes("private") && !t.includes("semi")) return "A";
+  if (t.includes("resort")) return "B";
+  if (t.includes("multi")) return "C";
+  if (t.includes("municipal") || t === "muni") return "E";
+  return "D"; // public, semi-private, unknown
+}
 
 router.post(
   "/admin/prospects/bulk-import",
   ...superAdmin,
   asyncHandler(async (req, res) => {
     const { csv } = BulkImportBody.parse(req.body);
-    const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    if (lines[0]?.toLowerCase().startsWith("clubname")) lines.shift();
-    if (lines.length === 0) throw badRequest("No rows to import.");
-    if (lines.length > 2000) throw badRequest("Max 2,000 rows per import.");
+    const table = parseCsv(csv);
+    if (table.length < 2) throw badRequest("Need a header row plus at least one data row.");
+
+    // Map column name → index (case/space-insensitive).
+    const norm = (h: string) => h.trim().toLowerCase().replace(/[\s_-]/g, "");
+    const header = table[0].map(norm);
+    const col = (...names: string[]): number => {
+      for (const nm of names) { const i = header.indexOf(norm(nm)); if (i >= 0) return i; }
+      return -1;
+    };
+    const idx = {
+      clubName: col("clubName", "club", "name"), city: col("city"), state: col("state"),
+      mainPhone: col("mainPhone", "phone"), website: col("website", "url"),
+      email: col("email", "publicEmail", "clubEmail"), clubType: col("clubType", "type"),
+      segment: col("segment"), timezone: col("timezone", "tz"),
+      dmName: col("dmName", "contact", "contactName"), dmTitle: col("dmTitle", "title"),
+      dmPhone: col("dmPhone"), dmEmail: col("dmEmail"),
+      membershipSize: col("membershipSize", "members"), coursesCount: col("coursesCount", "courses"),
+      notes: col("notes"),
+    };
+    if (idx.clubName < 0) throw badRequest("Header must include a 'clubName' column.");
+
+    const rows = table.slice(1);
+    if (rows.length > 5000) throw badRequest("Max 5,000 rows per import — split the file.");
 
     const seen = new Set(
       (await db.select({ n: prospects.clubName, s: prospects.state }).from(prospects)).map(
         (r) => `${r.n.toLowerCase()}|${(r.s ?? "").toLowerCase()}`,
       ),
     );
+    const at = (r: string[], i: number): string | null => (i >= 0 ? r[i]?.trim() || null : null);
 
-    let imported = 0;
+    const values: (typeof prospects.$inferInsert)[] = [];
     const skipped: { line: string; reason: string }[] = [];
-    for (const line of lines) {
-      const [clubName, city, state, timezone, clubType, segment, website, mainPhone, dmName, dmTitle, dmPhone, dmEmail] =
-        line.split(",").map((s) => s?.trim() || null);
-      if (!clubName || clubName.length < 2) {
-        skipped.push({ line: line.slice(0, 60), reason: "missing club name" });
-        continue;
-      }
+    for (const r of rows) {
+      const clubName = at(r, idx.clubName);
+      if (!clubName || clubName.length < 2) { skipped.push({ line: r.join(",").slice(0, 60), reason: "missing club name" }); continue; }
+      const state = at(r, idx.state);
       const key = `${clubName.toLowerCase()}|${(state ?? "").toLowerCase()}`;
-      if (seen.has(key)) {
-        skipped.push({ line: clubName, reason: "duplicate (same name + state)" });
-        continue;
-      }
+      if (seen.has(key)) { skipped.push({ line: clubName, reason: "duplicate (same name + state)" }); continue; }
       seen.add(key);
-      await db.insert(prospects).values({
-        clubName,
-        city,
-        state,
-        timezone: timezone && ["ET", "CT", "MT", "PT"].includes(timezone) ? timezone : null,
-        clubType,
-        segment: segment && ["A", "B", "C", "D", "E"].includes(segment) ? (segment as "A") : "D",
-        website,
-        mainPhone,
-        dmName,
-        dmTitle,
-        dmPhone,
-        dmEmail,
+
+      const tzRaw = at(r, idx.timezone);
+      const tz = tzRaw && ["ET", "CT", "MT", "PT"].includes(tzRaw.toUpperCase())
+        ? (tzRaw.toUpperCase() as "ET")
+        : (state ? STATE_TZ[state.toUpperCase()] ?? null : null);
+      const segRaw = at(r, idx.segment);
+      const segment = segRaw && ["A", "B", "C", "D", "E"].includes(segRaw.toUpperCase())
+        ? (segRaw.toUpperCase() as "A")
+        : segmentFor(at(r, idx.clubType));
+      const coursesRaw = at(r, idx.coursesCount);
+      const courses = coursesRaw && /^\d+$/.test(coursesRaw) ? Number(coursesRaw) : null;
+
+      values.push({
+        clubName, city: at(r, idx.city), state,
+        mainPhone: at(r, idx.mainPhone), website: at(r, idx.website),
+        publicEmail: at(r, idx.email), clubType: at(r, idx.clubType),
+        timezone: tz, segment,
+        dmName: at(r, idx.dmName), dmTitle: at(r, idx.dmTitle),
+        dmPhone: at(r, idx.dmPhone), dmEmail: at(r, idx.dmEmail),
+        membershipSize: at(r, idx.membershipSize), coursesCount: courses,
+        notes: at(r, idx.notes),
       });
-      imported += 1;
     }
-    res.status(201).json({ imported, skipped });
+
+    // Chunked bulk insert (fast + avoids request timeouts on large files).
+    let imported = 0;
+    for (let i = 0; i < values.length; i += 500) {
+      const chunk = values.slice(i, i + 500);
+      if (chunk.length) { await db.insert(prospects).values(chunk); imported += chunk.length; }
+    }
+    res.status(201).json({ imported, skipped: skipped.slice(0, 50), skippedTotal: skipped.length });
   }),
 );
 
@@ -431,14 +509,14 @@ router.get(
     const rows = await db.select().from(prospects).orderBy(asc(prospects.clubName));
     const header = [
       "club_name", "city", "state", "timezone", "club_type", "segment", "stage", "score", "classification",
-      "dm_name", "dm_title", "dm_phone", "dm_email", "website", "main_phone",
+      "dm_name", "dm_title", "dm_phone", "dm_email", "public_email", "website", "main_phone",
       "current_tee_software", "pain_primary", "objections", "last_contact_at", "next_followup_at", "demo_at",
       "assigned_closer", "notes",
     ];
     const body = rows.map((p) =>
       [
         p.clubName, p.city, p.state, p.timezone, p.clubType, p.segment, p.stage, p.score, classify(p.score),
-        p.dmName, p.dmTitle, p.dmPhone, p.dmEmail, p.website, p.mainPhone,
+        p.dmName, p.dmTitle, p.dmPhone, p.dmEmail, p.publicEmail, p.website, p.mainPhone,
         p.currentTeeSoftware, p.painPrimary, p.objections, p.lastContactAt, p.nextFollowupAt, p.demoAt,
         p.assignedCloser, p.notes,
       ].map(csvCell).join(","),

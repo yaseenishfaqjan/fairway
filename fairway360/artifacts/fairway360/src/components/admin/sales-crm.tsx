@@ -61,6 +61,7 @@ interface Prospect {
   id: string; clubName: string; website: string | null; mainPhone: string | null;
   city: string | null; state: string | null; timezone: string | null; clubType: string | null;
   coursesCount: number | null; membershipSize: string | null; segment: string;
+  publicEmail: string | null;
   dmName: string | null; dmTitle: string | null; dmPhone: string | null; dmEmail: string | null;
   currentTeeSoftware: string | null; currentClubSoftware: string | null;
   hasDining: boolean; hasEvents: boolean; hasMembershipProgram: boolean; hasTournaments: boolean;
@@ -500,7 +501,7 @@ function ProspectDialog({ id, initial, loading, onClose }: {
         clubName: p.clubName, website: p.website || null, mainPhone: p.mainPhone || null,
         city: p.city || null, state: p.state || null, timezone: (p.timezone as "ET") || null,
         clubType: p.clubType || null, coursesCount: p.coursesCount ?? null, membershipSize: p.membershipSize || null,
-        segment: p.segment as "A", dmName: p.dmName || null, dmTitle: p.dmTitle || null,
+        segment: p.segment as "A", publicEmail: p.publicEmail || null, dmName: p.dmName || null, dmTitle: p.dmTitle || null,
         dmPhone: p.dmPhone || null, dmEmail: p.dmEmail || null,
         currentTeeSoftware: p.currentTeeSoftware || null, currentClubSoftware: p.currentClubSoftware || null,
         hasDining: p.hasDining, hasEvents: p.hasEvents, hasMembershipProgram: p.hasMembershipProgram, hasTournaments: p.hasTournaments,
@@ -593,7 +594,7 @@ function ProspectDialog({ id, initial, loading, onClose }: {
                     {p.dmTitle && <div className="text-xs text-white/55">{p.dmTitle}</div>}
                     <div className="mt-2 space-y-0.5 text-[13px]">
                       {(p.dmPhone || p.mainPhone) && <a href={`tel:${p.dmPhone ?? p.mainPhone}`} className="flex items-center gap-2 text-accent hover:underline"><Phone className="h-3.5 w-3.5" />{p.dmPhone ?? p.mainPhone}</a>}
-                      {p.dmEmail && <a href={`mailto:${p.dmEmail}`} className="block truncate text-accent hover:underline">{p.dmEmail}</a>}
+                      {(p.dmEmail || p.publicEmail) && <a href={`mailto:${p.dmEmail ?? p.publicEmail}`} className="block truncate text-accent hover:underline">{p.dmEmail ?? p.publicEmail}</a>}
                       {p.website && <a href={p.website.startsWith("http") ? p.website : `https://${p.website}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-white/60 hover:text-accent"><Globe className="h-3.5 w-3.5" />Website</a>}
                     </div>
                   </div>
@@ -667,7 +668,8 @@ function ProspectDialog({ id, initial, loading, onClose }: {
                     <Input value={p.dmName ?? ""} onChange={(e) => set({ dmName: e.target.value })} placeholder="Name" className={inputCls} data-testid="input-dm-name" />
                     <Input value={p.dmTitle ?? ""} onChange={(e) => set({ dmTitle: e.target.value })} placeholder="Title (GM, Director of Golf…)" className={inputCls} />
                     <Input value={p.dmPhone ?? ""} onChange={(e) => set({ dmPhone: e.target.value })} placeholder="Direct number" className={inputCls} />
-                    <Input value={p.dmEmail ?? ""} onChange={(e) => set({ dmEmail: e.target.value })} placeholder="Email" className={inputCls} />
+                    <Input value={p.dmEmail ?? ""} onChange={(e) => set({ dmEmail: e.target.value })} placeholder="Decision-maker email" className={inputCls} />
+                    <Input value={p.publicEmail ?? ""} onChange={(e) => set({ publicEmail: e.target.value })} placeholder="Club public email (info@…)" className={inputCls} />
                   </Row>
                 </Sec>
                 <Sec title="Operational intelligence">

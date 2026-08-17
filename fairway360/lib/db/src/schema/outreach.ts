@@ -53,6 +53,7 @@ export const prospects = pgTable("prospects", {
   membershipSize: text("membership_size"), // free text: "~650", "unknown"
   segment: prospectSegment("segment").notNull().default("D"),
   // ── Decision maker ────────────────────────────────────────────────────────
+  publicEmail: text("public_email"), // the club's general/public email (info@, proshop@)
   dmName: text("dm_name"),
   dmTitle: text("dm_title"),
   dmPhone: text("dm_phone"),
