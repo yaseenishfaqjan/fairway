@@ -15,3 +15,4 @@ export * from "./invites";
 export * from "./knowledge";
 export * from "./preferences";
 export * from "./agents";
+export * from "./outreach";

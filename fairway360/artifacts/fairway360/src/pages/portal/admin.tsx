@@ -19,6 +19,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { PortalLogo } from "@/components/portal/portal-logo";
+import { SalesCrm } from "@/components/admin/sales-crm";
+import { SalesScripts } from "@/components/admin/sales-scripts";
 import { cn } from "@/lib/utils";
 
 const api = {
@@ -100,6 +102,7 @@ export function AdminPortal() {
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState({ clubName: "", slug: "", plan: "trial", adminName: "", adminEmail: "" });
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [section, setSection] = useState<"platform" | "crm" | "scripts">("platform");
 
   const createM = useMutation({
     mutationFn: () => api.post<{ clubId: string; inviteLink: string }>("/api/admin/tenants", form),
@@ -135,7 +138,27 @@ export function AdminPortal() {
           </div>
         </div>
 
-        {o && (
+        {/* Section switcher: platform management · outbound sales CRM · scripts */}
+        <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1">
+          {([["platform", "Platform"], ["crm", "Sales CRM"], ["scripts", "Call Scripts"]] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setSection(key)}
+              className={cn(
+                "flex-1 rounded-lg px-3 py-2 text-sm font-medium transition",
+                section === key ? "bg-accent/20 text-accent" : "text-white/55 hover:bg-white/[0.06] hover:text-white",
+              )}
+              data-testid={`tab-${key}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {section === "crm" && <SalesCrm />}
+        {section === "scripts" && <SalesScripts />}
+
+        {section === "platform" && o && (
           <>
             <div>
               <div className="mb-1 text-[10px] font-semibold uppercase tracking-[1.5px] text-accent">Platform overview</div>
@@ -164,6 +187,8 @@ export function AdminPortal() {
           </>
         )}
 
+        {section === "platform" && (
+          <>
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold">Tenants</h2>
           <Button size="sm" onClick={() => { setCreateOpen(true); setInviteLink(null); }} data-testid="button-create-tenant">
@@ -213,6 +238,8 @@ export function AdminPortal() {
             </div>
           ))}
         </div>
+          </>
+        )}
       </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
