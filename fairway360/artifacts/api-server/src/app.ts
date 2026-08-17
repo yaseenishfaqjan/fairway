@@ -39,8 +39,9 @@ app.use(cors());
 // mounted before the JSON body parser.
 app.use(stripeWebhookRouter);
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// 8mb so large CSV lead imports (bulk prospect upload) fit; default is 100kb.
+app.use(express.json({ limit: "8mb" }));
+app.use(express.urlencoded({ extended: true, limit: "8mb" }));
 app.use(sessionMiddleware());
 
 app.use("/api", router);
