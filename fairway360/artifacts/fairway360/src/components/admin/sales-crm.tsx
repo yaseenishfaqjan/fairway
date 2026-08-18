@@ -622,7 +622,8 @@ function ProspectDialog({ id, initial, loading, onClose }: {
                   <Button size="sm" disabled={callM.isPending} onClick={() => callM.mutate()} data-testid="button-log-call">
                     {callM.isPending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Phone className="mr-1 h-4 w-4" />} Log
                   </Button>
-                  <Button size="sm" variant="outline" className="border-[#46c97e]/40 text-[#46c97e] hover:bg-[#46c97e]/10" onClick={() => setBookOpen(true)} data-testid="button-book-meeting">
+                  <Button size="sm" variant="outline" className="border-[#46c97e]/40 text-[#46c97e] hover:bg-[#46c97e]/10"
+                    onClick={() => { window.open(bookUrl, "_blank", "noopener,noreferrer"); setBookOpen(true); }} data-testid="button-book-meeting">
                     <CalendarPlus className="mr-1 h-4 w-4" /> Book meeting
                   </Button>
                 </div>
@@ -817,25 +818,35 @@ function ProspectDialog({ id, initial, loading, onClose }: {
         )}
       </DialogContent>
 
-      {/* Cal.com booking — book a consultation / in-person meeting with the prospect */}
+      {/* Cal.com booking — opens Brady's calendar (prefilled) in a new tab.
+          Cal.com blocks iframe embedding, so we link out rather than embed. */}
       {p && (
         <Dialog open={bookOpen} onOpenChange={setBookOpen}>
-          <DialogContent className="max-h-[92dvh] overflow-hidden border-white/10 bg-[#07190f] p-0 text-white sm:max-w-2xl">
-            <DialogHeader className="border-b border-white/10 p-4">
+          <DialogContent className="border-white/10 bg-[#07190f] text-white sm:max-w-md">
+            <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base">
                 <CalendarPlus className="h-4 w-4 text-[#46c97e]" /> Book a meeting — {p.clubName}
               </DialogTitle>
-              <a href={bookUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline" data-testid="link-book-newtab">
-                Open Brady's calendar in a new tab <ExternalLink className="h-3 w-3" />
-              </a>
-              <p className="mt-1 text-[11px] text-white/45">After booking, log the call as "Demo Booked" and set the date so it shows on the pipeline &amp; hand-off.</p>
             </DialogHeader>
-            <iframe
-              title="Book a meeting"
-              src={bookUrl}
-              className="h-[70vh] w-full border-0 bg-white"
-              data-testid="iframe-cal"
-            />
+            <div className="flex flex-col items-center gap-4 py-4 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#46c97e]/15">
+                <CalendarPlus className="h-7 w-7 text-[#46c97e]" />
+              </div>
+              <p className="text-sm text-white/70">
+                Brady's booking calendar opened in a new tab, prefilled with {p.dmName ? `${p.dmName}'s` : "this club's"} details.
+                If your browser blocked it, use the button below.
+              </p>
+              <Button
+                className="w-full bg-[#46c97e] text-[#04130c] hover:bg-[#46c97e]/90"
+                onClick={() => window.open(bookUrl, "_blank", "noopener,noreferrer")}
+                data-testid="link-book-newtab"
+              >
+                <ExternalLink className="mr-2 h-4 w-4" /> Open Brady's calendar
+              </Button>
+              <p className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/55">
+                After booking, log the call as <span className="font-semibold text-[#46c97e]">"Demo Booked"</span> and set the date — it then shows on the pipeline &amp; the closer hand-off.
+              </p>
+            </div>
           </DialogContent>
         </Dialog>
       )}
