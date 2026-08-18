@@ -5,7 +5,7 @@
 
 import { Router, type IRouter, type Response } from "express";
 import { z } from "zod";
-import { and, asc, count, desc, eq, gte, ilike, inArray, isNotNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, isNotNull, isNull, lte, or } from "drizzle-orm";
 import { db, prospects, prospectCalls } from "@workspace/db";
 import { asyncHandler, badRequest, notFound } from "../lib/http";
 import { requireAuth, requireRole } from "../middleware/auth";
@@ -69,6 +69,7 @@ const ProspectBody = z.object({
   coursesCount: z.number().int().min(1).max(100).nullable().optional(),
   membershipSize: z.string().trim().max(60).nullable().optional(),
   segment: z.enum(["A", "B", "C", "D", "E"]).optional(),
+  campaign: z.string().trim().max(80).nullable().optional(),
   publicEmail: z.string().trim().max(160).nullable().optional(),
   dmName: z.string().trim().max(120).nullable().optional(),
   dmTitle: z.string().trim().max(120).nullable().optional(),
@@ -117,6 +118,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const stage = typeof req.query.stage === "string" ? req.query.stage : null;
     const segment = typeof req.query.segment === "string" ? req.query.segment : null;
+    const campaign = typeof req.query.campaign === "string" ? req.query.campaign : null;
     const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const due = req.query.due === "today"; // follow-ups due now or earlier
 
@@ -125,6 +127,7 @@ router.get(
       wheres.push(eq(prospects.stage, stage as (typeof STAGES)[number]));
     if (segment && ["A", "B", "C", "D", "E"].includes(segment))
       wheres.push(eq(prospects.segment, segment as "A" | "B" | "C" | "D" | "E"));
+    if (campaign) wheres.push(eq(prospects.campaign, campaign));
     if (q)
       wheres.push(
         or(
@@ -327,6 +330,13 @@ router.get(
 
     const [total] = await db.select({ c: count() }).from(prospects);
 
+    // Distinct campaigns + counts — powers the sidebar campaign selector.
+    const campaignRows = await db
+      .select({ campaign: prospects.campaign, c: count() })
+      .from(prospects)
+      .groupBy(prospects.campaign)
+      .orderBy(desc(count()));
+
     res.json({
       today: {
         callsAttempted: attempted,
@@ -346,6 +356,7 @@ router.get(
         count: Number(stageCounts.find((r) => r.stage === s)?.c ?? 0),
       })),
       totalProspects: Number(total?.c ?? 0),
+      campaigns: campaignRows.map((r) => ({ name: r.campaign ?? "Uncategorized", count: Number(r.c) })),
       followupsDueToday: Number(followupsDue?.c ?? 0),
       upcomingDemos: upcomingDemos.map((p) => ({
         id: p.id,
@@ -370,7 +381,10 @@ router.get(
 // derived from state / clubType when not supplied. Proper CSV parsing handles
 // quoted fields containing commas and newlines.
 
-const BulkImportBody = z.object({ csv: z.string().min(1).max(5_000_000) });
+const BulkImportBody = z.object({
+  csv: z.string().min(1).max(5_000_000),
+  campaign: z.string().trim().max(80).optional(), // tag every imported row with this campaign
+});
 
 /** RFC-4180-ish CSV parser: quotes, escaped quotes (""), embedded commas & newlines. */
 function parseCsv(text: string): string[][] {
@@ -420,7 +434,7 @@ router.post(
   "/admin/prospects/bulk-import",
   ...superAdmin,
   asyncHandler(async (req, res) => {
-    const { csv } = BulkImportBody.parse(req.body);
+    const { csv, campaign } = BulkImportBody.parse(req.body);
     const table = parseCsv(csv);
     if (table.length < 2) throw badRequest("Need a header row plus at least one data row.");
 
@@ -432,14 +446,14 @@ router.post(
       return -1;
     };
     const idx = {
-      clubName: col("clubName", "club", "name"), city: col("city"), state: col("state"),
+      clubName: col("clubName", "businessName", "companyName", "club", "name"), city: col("city"), state: col("state"),
       mainPhone: col("mainPhone", "phone"), website: col("website", "url"),
-      email: col("email", "publicEmail", "clubEmail"), clubType: col("clubType", "type"),
+      email: col("email", "publicEmail", "clubEmail"), clubType: col("clubType", "businessType", "type"),
       segment: col("segment"), timezone: col("timezone", "tz"),
       dmName: col("dmName", "contact", "contactName"), dmTitle: col("dmTitle", "title"),
       dmPhone: col("dmPhone"), dmEmail: col("dmEmail"),
       membershipSize: col("membershipSize", "members"), coursesCount: col("coursesCount", "courses"),
-      notes: col("notes"),
+      notes: col("notes"), campaign: col("campaign", "list"),
     };
     if (idx.clubName < 0) throw badRequest("Header must include a 'clubName' column.");
 
@@ -483,6 +497,7 @@ router.post(
         dmPhone: at(r, idx.dmPhone), dmEmail: at(r, idx.dmEmail),
         membershipSize: at(r, idx.membershipSize), coursesCount: courses,
         notes: at(r, idx.notes),
+        campaign: campaign ?? at(r, idx.campaign),
       });
     }
 
@@ -493,6 +508,22 @@ router.post(
       if (chunk.length) { await db.insert(prospects).values(chunk); imported += chunk.length; }
     }
     res.status(201).json({ imported, skipped: skipped.slice(0, 50), skippedTotal: skipped.length });
+  }),
+);
+
+// Backfill: tag prospects that have no campaign yet (e.g. the original import).
+const TagCampaignBody = z.object({ campaign: z.string().trim().min(1).max(80), onlyUntagged: z.boolean().optional() });
+router.post(
+  "/admin/prospects/tag-campaign",
+  ...superAdmin,
+  asyncHandler(async (req, res) => {
+    const { campaign, onlyUntagged } = TagCampaignBody.parse(req.body);
+    const rows = await db
+      .update(prospects)
+      .set({ campaign, updatedAt: new Date() })
+      .where(onlyUntagged === false ? undefined : isNull(prospects.campaign))
+      .returning({ id: prospects.id });
+    res.json({ tagged: rows.length, campaign });
   }),
 );
 
@@ -508,14 +539,14 @@ router.get(
   asyncHandler(async (_req, res: Response) => {
     const rows = await db.select().from(prospects).orderBy(asc(prospects.clubName));
     const header = [
-      "club_name", "city", "state", "timezone", "club_type", "segment", "stage", "score", "classification",
+      "club_name", "campaign", "city", "state", "timezone", "club_type", "segment", "stage", "score", "classification",
       "dm_name", "dm_title", "dm_phone", "dm_email", "public_email", "website", "main_phone",
       "current_tee_software", "pain_primary", "objections", "last_contact_at", "next_followup_at", "demo_at",
       "assigned_closer", "notes",
     ];
     const body = rows.map((p) =>
       [
-        p.clubName, p.city, p.state, p.timezone, p.clubType, p.segment, p.stage, p.score, classify(p.score),
+        p.clubName, p.campaign, p.city, p.state, p.timezone, p.clubType, p.segment, p.stage, p.score, classify(p.score),
         p.dmName, p.dmTitle, p.dmPhone, p.dmEmail, p.publicEmail, p.website, p.mainPhone,
         p.currentTeeSoftware, p.painPrimary, p.objections, p.lastContactAt, p.nextFollowupAt, p.demoAt,
         p.assignedCloser, p.notes,

@@ -52,6 +52,9 @@ export const prospects = pgTable("prospects", {
   coursesCount: integer("courses_count"),
   membershipSize: text("membership_size"), // free text: "~650", "unknown"
   segment: prospectSegment("segment").notNull().default("D"),
+  // Campaign / lead list this prospect belongs to (e.g. "Georgia Golf Clubs",
+  // "US Nationwide"). Lets the caller work one targeted list at a time.
+  campaign: text("campaign"),
   // ── Decision maker ────────────────────────────────────────────────────────
   publicEmail: text("public_email"), // the club's general/public email (info@, proshop@)
   dmName: text("dm_name"),

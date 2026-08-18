@@ -8,7 +8,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  CalendarClock, ClipboardCopy, Download, Globe, KanbanSquare, LayoutDashboard,
+  CalendarClock, CalendarPlus, ClipboardCopy, Download, ExternalLink, Globe, KanbanSquare, LayoutDashboard,
   Loader2, Phone, PhoneCall, Plus, Search, Target, Trash2, Upload, Users, X,
 } from "lucide-react";
 import { customFetch } from "@workspace/api-client-react";
@@ -48,6 +48,10 @@ const SIGNALS = [
   "Decision-maker engaged", "Technology upgrade interest",
 ] as const;
 
+// Brady's booking calendar — the caller books consultations/meetings here,
+// prefilled with the prospect's details. Change this one line to swap calendars.
+const CAL_BOOKING_URL = "https://cal.com/bradywalker9/15min";
+
 const SEGMENTS: { key: string; label: string }[] = [
   { key: "A", label: "A · Private country clubs" },
   { key: "B", label: "B · Resort / destination" },
@@ -61,6 +65,7 @@ interface Prospect {
   id: string; clubName: string; website: string | null; mainPhone: string | null;
   city: string | null; state: string | null; timezone: string | null; clubType: string | null;
   coursesCount: number | null; membershipSize: string | null; segment: string;
+  campaign: string | null;
   publicEmail: string | null;
   dmName: string | null; dmTitle: string | null; dmPhone: string | null; dmEmail: string | null;
   currentTeeSoftware: string | null; currentClubSoftware: string | null;
@@ -79,6 +84,7 @@ interface Summary {
   };
   funnel: { stage: string; count: number }[];
   totalProspects: number; followupsDueToday: number;
+  campaigns: { name: string; count: number }[];
   upcomingDemos: { id: string; clubName: string; dmName: string | null; demoAt: string | null; assignedCloser: string; score: number }[];
   bestOpportunity: { id: string; clubName: string; score: number; stage: string; painPrimary: string | null } | null;
 }
@@ -134,6 +140,7 @@ export function SalesCrm() {
 
   const [view, setView] = useState<View>("pipeline");
   const [segFilter, setSegFilter] = useState("all");
+  const [campaign, setCampaign] = useState("all");
   const [q, setQ] = useState("");
   const [dueOnly, setDueOnly] = useState(false);
   const [openId, setOpenId] = useState<string | "new" | null>(null);
@@ -143,11 +150,12 @@ export function SalesCrm() {
   const listUrl = useMemo(() => {
     const p = new URLSearchParams();
     if (segFilter !== "all") p.set("segment", segFilter);
+    if (campaign !== "all") p.set("campaign", campaign);
     if (q.trim()) p.set("q", q.trim());
     if (dueOnly) p.set("due", "today");
     const s = p.toString();
     return `/api/admin/prospects${s ? `?${s}` : ""}`;
-  }, [segFilter, q, dueOnly]);
+  }, [segFilter, campaign, q, dueOnly]);
 
   const summaryQ = useQuery({ queryKey: ["crm", "summary"], queryFn: () => api.get<Summary>("/api/admin/outreach/summary"), refetchInterval: 60_000 });
   const listQ = useQuery({ queryKey: ["crm", "list", listUrl], queryFn: () => api.get<Prospect[]>(listUrl) });
@@ -181,6 +189,31 @@ export function SalesCrm() {
     <div className="flex flex-col gap-4 lg:flex-row">
       {/* ── Left navigation rail ──────────────────────────────────────────── */}
       <aside className="shrink-0 lg:w-52">
+        {/* Campaign selector — each lead list (e.g. "Georgia Golf Clubs") is its own section */}
+        {(s?.campaigns?.length ?? 0) > 0 && (
+          <div className="mb-3 rounded-2xl border border-white/10 bg-white/[0.03] p-2">
+            <div className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-[1.5px] text-accent">Campaign</div>
+            <button
+              onClick={() => setCampaign("all")}
+              className={cn("mb-0.5 flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-sm transition",
+                campaign === "all" ? "bg-accent/20 text-accent" : "text-white/60 hover:bg-white/[0.06] hover:text-white")}
+              data-testid="campaign-all"
+            >
+              <span>All leads</span><span className="text-[11px] text-white/40">{s?.totalProspects ?? 0}</span>
+            </button>
+            {s!.campaigns.map((c) => (
+              <button
+                key={c.name}
+                onClick={() => setCampaign(c.name)}
+                className={cn("mb-0.5 flex w-full items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-sm transition",
+                  campaign === c.name ? "bg-accent/20 text-accent" : "text-white/60 hover:bg-white/[0.06] hover:text-white")}
+                data-testid={`campaign-${c.name}`}
+              >
+                <span className="truncate text-left">{c.name}</span><span className="shrink-0 text-[11px] text-white/40">{c.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-2">
           <div className="px-2 py-2 text-[10px] font-semibold uppercase tracking-[1.5px] text-accent">Outbound sales</div>
           {NAV.map((n) => (
@@ -250,7 +283,8 @@ export function SalesCrm() {
 
         {view === "dashboard" && <Dashboard s={s} onOpen={setOpenId} onStage={() => setView("pipeline")} />}
         {view === "pipeline" && (
-          <PipelineBoard prospects={prospects} loading={listQ.isLoading} funnelCount={funnelCount} today={s?.today} onOpen={setOpenId} />
+          <PipelineBoard prospects={prospects} loading={listQ.isLoading} funnelCount={funnelCount}
+            filtered={campaign !== "all" || segFilter !== "all" || !!q.trim()} today={s?.today} onOpen={setOpenId} />
         )}
         {view === "contacts" && (
           <ContactsList prospects={prospects} loading={listQ.isLoading} onOpen={setOpenId} />
@@ -377,8 +411,8 @@ function ProspectCard({ p, onOpen }: { p: Prospect; onOpen: (id: string) => void
 
 const PER_COLUMN = 30;
 
-function PipelineBoard({ prospects, loading, funnelCount, today, onOpen }: {
-  prospects: Prospect[]; loading: boolean; funnelCount: (s: string) => number;
+function PipelineBoard({ prospects, loading, funnelCount, filtered, today, onOpen }: {
+  prospects: Prospect[]; loading: boolean; funnelCount: (s: string) => number; filtered: boolean;
   today: Summary["today"] | undefined; onOpen: (id: string) => void;
 }) {
   const byStage = useMemo(() => {
@@ -400,7 +434,7 @@ function PipelineBoard({ prospects, loading, funnelCount, today, onOpen }: {
           <div className="flex min-h-[300px] gap-3" style={{ width: "max-content" }}>
             {columns.map((st) => {
               const cards = byStage.get(st) ?? [];
-              const total = funnelCount(st) || cards.length;
+              const total = filtered ? cards.length : (funnelCount(st) || cards.length);
               return (
                 <div key={st} className="flex w-64 shrink-0 flex-col rounded-xl border border-white/10 bg-white/[0.02]">
                   <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
@@ -490,6 +524,7 @@ function ProspectDialog({ id, initial, loading, onClose }: {
   const [callOutcome, setCallOutcome] = useState<string>("No Answer");
   const [callNotes, setCallNotes] = useState("");
   const [edit, setEdit] = useState(id === null); // new prospects open straight into edit mode
+  const [bookOpen, setBookOpen] = useState(false);
 
   if (!p && initial) setP(initial);
   const set = (patch: Partial<Prospect>) => setP((cur) => (cur ? { ...cur, ...patch } : cur));
@@ -501,7 +536,7 @@ function ProspectDialog({ id, initial, loading, onClose }: {
         clubName: p.clubName, website: p.website || null, mainPhone: p.mainPhone || null,
         city: p.city || null, state: p.state || null, timezone: (p.timezone as "ET") || null,
         clubType: p.clubType || null, coursesCount: p.coursesCount ?? null, membershipSize: p.membershipSize || null,
-        segment: p.segment as "A", publicEmail: p.publicEmail || null, dmName: p.dmName || null, dmTitle: p.dmTitle || null,
+        segment: p.segment as "A", campaign: p.campaign || null, publicEmail: p.publicEmail || null, dmName: p.dmName || null, dmTitle: p.dmTitle || null,
         dmPhone: p.dmPhone || null, dmEmail: p.dmEmail || null,
         currentTeeSoftware: p.currentTeeSoftware || null, currentClubSoftware: p.currentClubSoftware || null,
         hasDining: p.hasDining, hasEvents: p.hasEvents, hasMembershipProgram: p.hasMembershipProgram, hasTournaments: p.hasTournaments,
@@ -532,6 +567,16 @@ function ProspectDialog({ id, initial, loading, onClose }: {
   });
 
   const delM = useMutation({ mutationFn: () => api.del(`/api/admin/prospects/${id}`), onSuccess: () => { toast({ title: "Prospect deleted" }); onClose(true); } });
+
+  // Prefilled Cal.com booking link — invitee = the prospect (name/email/notes).
+  const bookUrl = (() => {
+    if (!p) return CAL_BOOKING_URL;
+    const params = new URLSearchParams();
+    if (p.dmName) params.set("name", p.dmName);
+    if (p.dmEmail || p.publicEmail) params.set("email", (p.dmEmail ?? p.publicEmail)!);
+    params.set("notes", `${p.clubName}${p.city || p.state ? ` — ${[p.city, p.state].filter(Boolean).join(", ")}` : ""}${p.mainPhone ? ` · ${p.mainPhone}` : ""}`);
+    return `${CAL_BOOKING_URL}?${params.toString()}`;
+  })();
 
   const score = (p?.scoreSignals?.length ?? 0) * 2;
   const cls = score >= 16 ? "HOT" : score >= 10 ? "WARM" : score >= 5 ? "DEVELOP" : "LOW";
@@ -576,6 +621,9 @@ function ProspectDialog({ id, initial, loading, onClose }: {
                   <Input value={callNotes} onChange={(e) => setCallNotes(e.target.value)} placeholder="Call notes (their words, pain, next step)…" className={cn(inputCls, "min-w-[200px] flex-1")} data-testid="input-call-notes" />
                   <Button size="sm" disabled={callM.isPending} onClick={() => callM.mutate()} data-testid="button-log-call">
                     {callM.isPending ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Phone className="mr-1 h-4 w-4" />} Log
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-[#46c97e]/40 text-[#46c97e] hover:bg-[#46c97e]/10" onClick={() => setBookOpen(true)} data-testid="button-book-meeting">
+                    <CalendarPlus className="mr-1 h-4 w-4" /> Book meeting
                   </Button>
                 </div>
                 {(callOutcome === "Callback Scheduled" || callOutcome === "Demo Booked") && (
@@ -768,6 +816,29 @@ function ProspectDialog({ id, initial, loading, onClose }: {
           </div>
         )}
       </DialogContent>
+
+      {/* Cal.com booking — book a consultation / in-person meeting with the prospect */}
+      {p && (
+        <Dialog open={bookOpen} onOpenChange={setBookOpen}>
+          <DialogContent className="max-h-[92dvh] overflow-hidden border-white/10 bg-[#07190f] p-0 text-white sm:max-w-2xl">
+            <DialogHeader className="border-b border-white/10 p-4">
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <CalendarPlus className="h-4 w-4 text-[#46c97e]" /> Book a meeting — {p.clubName}
+              </DialogTitle>
+              <a href={bookUrl} target="_blank" rel="noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs text-accent hover:underline" data-testid="link-book-newtab">
+                Open Brady's calendar in a new tab <ExternalLink className="h-3 w-3" />
+              </a>
+              <p className="mt-1 text-[11px] text-white/45">After booking, log the call as "Demo Booked" and set the date so it shows on the pipeline &amp; hand-off.</p>
+            </DialogHeader>
+            <iframe
+              title="Book a meeting"
+              src={bookUrl}
+              className="h-[70vh] w-full border-0 bg-white"
+              data-testid="iframe-cal"
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }
