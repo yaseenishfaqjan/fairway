@@ -6,7 +6,7 @@
 import { Router, type IRouter, type Response } from "express";
 import { z } from "zod";
 import { and, asc, count, desc, eq, gte, ilike, isNotNull, isNull, lte, or } from "drizzle-orm";
-import { db, prospects, prospectCalls } from "@workspace/db";
+import { db, prospects, prospectCalls, platformSettings } from "@workspace/db";
 import { asyncHandler, badRequest, notFound } from "../lib/http";
 import { requireAuth, requireRole } from "../middleware/auth";
 
@@ -508,6 +508,33 @@ router.post(
       if (chunk.length) { await db.insert(prospects).values(chunk); imported += chunk.length; }
     }
     res.status(201).json({ imported, skipped: skipped.slice(0, 50), skippedTotal: skipped.length });
+  }),
+);
+
+// ── Platform settings (super-admin editable; e.g. the Cal.com booking link) ──
+const DEFAULT_BOOKING_URL = "https://cal.com/bradywalker9/15min";
+
+router.get(
+  "/admin/settings",
+  ...superAdmin,
+  asyncHandler(async (_req, res) => {
+    const rows = await db.select().from(platformSettings);
+    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    res.json({ bookingUrl: map["booking_url"] || DEFAULT_BOOKING_URL });
+  }),
+);
+
+const SettingsBody = z.object({ bookingUrl: z.string().trim().url().max(500) });
+router.patch(
+  "/admin/settings",
+  ...superAdmin,
+  asyncHandler(async (req, res) => {
+    const { bookingUrl } = SettingsBody.parse(req.body);
+    await db
+      .insert(platformSettings)
+      .values({ key: "booking_url", value: bookingUrl })
+      .onConflictDoUpdate({ target: platformSettings.key, set: { value: bookingUrl, updatedAt: new Date() } });
+    res.json({ ok: true, bookingUrl });
   }),
 );
 

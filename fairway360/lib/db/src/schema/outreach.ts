@@ -127,3 +127,12 @@ export const insertProspectCallSchema = createInsertSchema(prospectCalls).omit({
 });
 export type InsertProspectCall = z.infer<typeof insertProspectCallSchema>;
 export type ProspectCall = typeof prospectCalls.$inferSelect;
+
+// Platform-level key/value settings editable by super-admins (e.g. the Cal.com
+// booking link the caller uses). Keeps operational config out of the codebase.
+export const platformSettings = pgTable("platform_settings", {
+  key: text("key").primaryKey(),
+  value: text("value"),
+  ...timestamps,
+});
+export type PlatformSetting = typeof platformSettings.$inferSelect;

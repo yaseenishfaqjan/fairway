@@ -158,6 +158,8 @@ export function SalesCrm() {
   }, [segFilter, campaign, q, dueOnly]);
 
   const summaryQ = useQuery({ queryKey: ["crm", "summary"], queryFn: () => api.get<Summary>("/api/admin/outreach/summary"), refetchInterval: 60_000 });
+  const settingsQ = useQuery({ queryKey: ["crm", "settings"], queryFn: () => api.get<{ bookingUrl: string }>("/api/admin/settings") });
+  const bookingUrl = settingsQ.data?.bookingUrl || CAL_BOOKING_URL;
   const listQ = useQuery({ queryKey: ["crm", "list", listUrl], queryFn: () => api.get<Prospect[]>(listUrl) });
   const detailQ = useQuery({
     queryKey: ["crm", "detail", openId],
@@ -281,7 +283,7 @@ export function SalesCrm() {
           </div>
         )}
 
-        {view === "dashboard" && <Dashboard s={s} onOpen={setOpenId} onStage={() => setView("pipeline")} />}
+        {view === "dashboard" && <Dashboard s={s} bookingUrl={bookingUrl} onOpen={setOpenId} onStage={() => setView("pipeline")} onSaved={() => void qc.invalidateQueries({ queryKey: ["crm", "settings"] })} />}
         {view === "pipeline" && (
           <PipelineBoard prospects={prospects} loading={listQ.isLoading} funnelCount={funnelCount}
             filtered={campaign !== "all" || segFilter !== "all" || !!q.trim()} today={s?.today} onOpen={setOpenId} />
@@ -297,6 +299,7 @@ export function SalesCrm() {
           id={openId === "new" ? null : openId}
           initial={openId === "new" ? (EMPTY as Prospect) : detailQ.data ?? null}
           loading={openId !== "new" && detailQ.isLoading}
+          bookingBase={bookingUrl}
           onClose={(changed) => { setOpenId(null); if (changed) refresh(); }}
         />
       )}
@@ -331,10 +334,39 @@ function Kpi({ label, value, tone }: { label: string; value: number | string; to
   );
 }
 
-function Dashboard({ s, onOpen, onStage }: { s: Summary | undefined; onOpen: (id: string) => void; onStage: () => void }) {
+function BookingLinkCard({ current, onSaved }: { current: string; onSaved: () => void }) {
+  const { toast } = useToast();
+  const [url, setUrl] = useState(current);
+  const save = useMutation({
+    mutationFn: () => api.patch<{ bookingUrl: string }>("/api/admin/settings", { bookingUrl: url.trim() }),
+    onSuccess: () => { onSaved(); toast({ title: "Booking link saved", description: "Every 'Book meeting' button now uses this link." }); },
+    onError: (e: Error) => toast({ title: "Couldn't save", description: e.message, variant: "destructive" }),
+  });
+  const dirty = url.trim() !== current;
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
+      <div className="mb-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-accent">
+        <CalendarPlus className="h-3.5 w-3.5" /> Booking link (Brady's calendar)
+      </div>
+      <p className="mb-2 text-xs text-white/50">The "Book meeting" button on every prospect opens this link, prefilled. Paste the exact public link from Brady's Cal.com event (open it in a browser, copy the address). Test it opens before saving.</p>
+      <div className="flex flex-wrap gap-2">
+        <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://cal.com/username/event" className={cn(inputCls, "min-w-[240px] flex-1")} data-testid="input-booking-url" />
+        <Button size="sm" variant="outline" className="border-white/15" asChild>
+          <a href={url} target="_blank" rel="noreferrer">Test</a>
+        </Button>
+        <Button size="sm" disabled={!dirty || save.isPending || !/^https?:\/\//.test(url.trim())} onClick={() => save.mutate()} data-testid="button-save-booking-url">
+          {save.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />} Save
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({ s, bookingUrl, onOpen, onStage, onSaved }: { s: Summary | undefined; bookingUrl: string; onOpen: (id: string) => void; onStage: () => void; onSaved: () => void }) {
   if (!s) return <Loader2 className="h-5 w-5 animate-spin text-accent" />;
   return (
     <div className="space-y-5">
+      <BookingLinkCard current={bookingUrl} onSaved={onSaved} />
       <div>
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-[1.5px] text-accent">Today's calling scorecard</div>
         <div className="grid grid-cols-3 gap-2 md:grid-cols-4 lg:grid-cols-8">
@@ -515,8 +547,8 @@ function Fact({ k, v }: { k: string; v: React.ReactNode }) {
   return <div className="flex justify-between gap-3 py-0.5 text-[13px]"><span className="text-white/45">{k}</span><span className="text-right font-medium text-white/85">{v}</span></div>;
 }
 
-function ProspectDialog({ id, initial, loading, onClose }: {
-  id: string | null; initial: Prospect | null; loading: boolean; onClose: (changed: boolean) => void;
+function ProspectDialog({ id, initial, loading, bookingBase, onClose }: {
+  id: string | null; initial: Prospect | null; loading: boolean; bookingBase: string; onClose: (changed: boolean) => void;
 }) {
   const { toast } = useToast();
   const [p, setP] = useState<Prospect | null>(initial);
@@ -570,12 +602,12 @@ function ProspectDialog({ id, initial, loading, onClose }: {
 
   // Prefilled Cal.com booking link — invitee = the prospect (name/email/notes).
   const bookUrl = (() => {
-    if (!p) return CAL_BOOKING_URL;
+    if (!p) return bookingBase;
     const params = new URLSearchParams();
     if (p.dmName) params.set("name", p.dmName);
     if (p.dmEmail || p.publicEmail) params.set("email", (p.dmEmail ?? p.publicEmail)!);
     params.set("notes", `${p.clubName}${p.city || p.state ? ` — ${[p.city, p.state].filter(Boolean).join(", ")}` : ""}${p.mainPhone ? ` · ${p.mainPhone}` : ""}`);
-    return `${CAL_BOOKING_URL}?${params.toString()}`;
+    return `${bookingBase}${bookingBase.includes("?") ? "&" : "?"}${params.toString()}`;
   })();
 
   const score = (p?.scoreSignals?.length ?? 0) * 2;
