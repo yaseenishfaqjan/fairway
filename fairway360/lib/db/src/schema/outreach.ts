@@ -81,6 +81,7 @@ export const prospects = pgTable("prospects", {
   score: integer("score").notNull().default(0),
   // Scheduling
   lastContactAt: timestamp("last_contact_at", { withTimezone: true }),
+  lastEmailAt: timestamp("last_email_at", { withTimezone: true }), // last info email sent to this prospect
   nextFollowupAt: timestamp("next_followup_at", { withTimezone: true }),
   demoAt: timestamp("demo_at", { withTimezone: true }),
   assignedCloser: text("assigned_closer").notNull().default("Brady"),

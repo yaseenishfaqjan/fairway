@@ -9,6 +9,7 @@ import { and, asc, count, desc, eq, gte, ilike, isNotNull, isNull, lte, or } fro
 import { db, prospects, prospectCalls, platformSettings } from "@workspace/db";
 import { asyncHandler, badRequest, notFound } from "../lib/http";
 import { requireAuth, requireRole } from "../middleware/auth";
+import { sendEmail } from "../lib/email";
 
 const router: IRouter = Router();
 const superAdmin = [requireAuth, requireRole("super_admin")];
@@ -103,6 +104,7 @@ function serialize(p: typeof prospects.$inferSelect) {
     scoreSignals: (p.scoreSignals as string[]) ?? [],
     classification: classify(p.score),
     lastContactAt: p.lastContactAt?.toISOString() ?? null,
+    lastEmailAt: p.lastEmailAt?.toISOString() ?? null,
     nextFollowupAt: p.nextFollowupAt?.toISOString() ?? null,
     demoAt: p.demoAt?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
@@ -511,30 +513,122 @@ router.post(
   }),
 );
 
-// ── Platform settings (super-admin editable; e.g. the Cal.com booking link) ──
+// ── Platform settings (super-admin editable; booking link, sales reply-to) ───
 const DEFAULT_BOOKING_URL = "https://cal.com/bradywalker9/15min";
+const DEFAULT_REPLY_TO = "info@fairway360.io";
+const DEFAULT_WEBSITE = "https://fairway360.io";
+const AI_DEMO_LINE = "+1 (412) 285-1554";
+
+async function loadSettings() {
+  const rows = await db.select().from(platformSettings);
+  const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+  return {
+    bookingUrl: map["booking_url"] || DEFAULT_BOOKING_URL,
+    replyTo: map["sales_reply_to"] || DEFAULT_REPLY_TO,
+  };
+}
+async function setSetting(key: string, value: string) {
+  await db
+    .insert(platformSettings)
+    .values({ key, value })
+    .onConflictDoUpdate({ target: platformSettings.key, set: { value, updatedAt: new Date() } });
+}
 
 router.get(
   "/admin/settings",
   ...superAdmin,
   asyncHandler(async (_req, res) => {
-    const rows = await db.select().from(platformSettings);
-    const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
-    res.json({ bookingUrl: map["booking_url"] || DEFAULT_BOOKING_URL });
+    res.json(await loadSettings());
   }),
 );
 
-const SettingsBody = z.object({ bookingUrl: z.string().trim().url().max(500) });
+const SettingsBody = z.object({
+  bookingUrl: z.string().trim().url().max(500).optional(),
+  replyTo: z.string().trim().email().max(160).optional(),
+});
 router.patch(
   "/admin/settings",
   ...superAdmin,
   asyncHandler(async (req, res) => {
-    const { bookingUrl } = SettingsBody.parse(req.body);
+    const body = SettingsBody.parse(req.body);
+    if (body.bookingUrl) await setSetting("booking_url", body.bookingUrl);
+    if (body.replyTo) await setSetting("sales_reply_to", body.replyTo);
+    res.json({ ok: true, ...(await loadSettings()) });
+  }),
+);
+
+// ── Send a ready-made intro email to a prospect (one-click from the CRM) ─────
+const SendProspectEmailBody = z.object({
+  to: z.string().trim().email().max(160),
+  note: z.string().trim().max(1200).optional(),
+});
+
+function prospectEmailHtml(opts: {
+  firstName: string; clubName: string; note: string | null;
+  website: string; bookingUrl: string;
+}): string {
+  const { firstName, clubName, note, website, bookingUrl } = opts;
+  const noteBlock = note
+    ? `<p style="margin:0 0 16px;white-space:pre-wrap">${note.replace(/</g, "&lt;")}</p>`
+    : "";
+  return `<div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:560px;margin:0 auto;color:#12241c">
+    <div style="background:linear-gradient(120deg,#0f3d28,#0a2b1c);color:#fff;padding:22px 26px;border-radius:12px 12px 0 0">
+      <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.7">Fairway360</div>
+      <div style="font-size:20px;font-weight:700;margin-top:4px">The operating system for the modern golf club</div>
+    </div>
+    <div style="border:1px solid #e3e8e5;border-top:none;border-radius:0 0 12px 12px;padding:24px 26px;font-size:15px;line-height:1.55">
+      <p style="margin:0 0 16px">Hi ${firstName},</p>
+      ${noteBlock}
+      <p style="margin:0 0 16px">Thanks for taking my call. As promised, here's a quick look at <b>Fairway360</b> — one system built specifically for golf clubs like ${clubName} to handle the busywork that eats up your team's day:</p>
+      <ul style="margin:0 0 18px;padding-left:18px;color:#3a4a41">
+        <li style="margin-bottom:6px"><b>AI phone concierge</b> — answers calls 24/7 so you never miss a tee-time request or a new-member inquiry</li>
+        <li style="margin-bottom:6px"><b>Tee-time booking</b> — members book themselves, day or night</li>
+        <li style="margin-bottom:6px"><b>Membership &amp; event capture</b> — every inquiry logged and followed up automatically</li>
+        <li style="margin-bottom:6px"><b>On-course food &amp; beverage ordering</b> — straight from the phone to the cart</li>
+      </ul>
+      <p style="margin:0 0 10px"><b>See it for yourself:</b></p>
+      <p style="margin:0 0 22px">
+        <a href="${website}" style="background:#1a6b46;color:#fff;text-decoration:none;padding:11px 20px;border-radius:10px;font-weight:600;display:inline-block">See how it works →</a>
+      </p>
+      <p style="margin:0 0 16px;color:#3a4a41">Or call our AI line at <a href="tel:+14122851554" style="color:#1a6b46;font-weight:600">${AI_DEMO_LINE}</a> and talk to the assistant yourself — it's the exact technology your club would get.</p>
+      <p style="margin:0 0 16px">Want a quick 15-minute walkthrough? <a href="${bookingUrl}" style="color:#1a6b46;font-weight:600">Grab a time here</a>.</p>
+      <p style="margin:18px 0 0">Just reply to this email with any questions — happy to help.</p>
+      <p style="margin:16px 0 0;color:#6a7a71;font-size:13px">— The Fairway360 Team · <a href="${website}" style="color:#6a7a71">fairway360.io</a></p>
+      <p style="margin:14px 0 0;color:#9aa8a0;font-size:11px">You received this because you asked us to send information during our call. Reply "unsubscribe" and we won't email again.</p>
+    </div>
+  </div>`;
+}
+
+router.post(
+  "/admin/prospects/:id/send-email",
+  ...superAdmin,
+  asyncHandler<{ id: string }>(async (req, res) => {
+    const { to, note } = SendProspectEmailBody.parse(req.body);
+    const [p] = await db.select().from(prospects).where(eq(prospects.id, req.params.id));
+    if (!p) throw notFound("Prospect not found.");
+
+    const { bookingUrl, replyTo } = await loadSettings();
+    const firstName = (p.dmName ?? "").split(" ")[0] || "there";
+    const html = prospectEmailHtml({
+      firstName, clubName: p.clubName, note: note ?? null,
+      website: DEFAULT_WEBSITE, bookingUrl,
+    });
+
+    const ok = await sendEmail({
+      to,
+      subject: `How Fairway360 works — for ${p.clubName}`,
+      html,
+      replyTo,
+    });
+    if (!ok) throw badRequest("Email couldn't be sent — check the email service configuration.");
+
+    // Record the touch: stamp last email + last contact (never move the stage).
     await db
-      .insert(platformSettings)
-      .values({ key: "booking_url", value: bookingUrl })
-      .onConflictDoUpdate({ target: platformSettings.key, set: { value: bookingUrl, updatedAt: new Date() } });
-    res.json({ ok: true, bookingUrl });
+      .update(prospects)
+      .set({ lastEmailAt: new Date(), lastContactAt: new Date(), updatedAt: new Date() })
+      .where(eq(prospects.id, p.id));
+
+    res.json({ ok: true, to });
   }),
 );
 

@@ -9,7 +9,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CalendarClock, CalendarPlus, ClipboardCopy, Download, ExternalLink, Globe, KanbanSquare, LayoutDashboard,
-  Loader2, Phone, PhoneCall, Plus, Search, Target, Trash2, Upload, Users, X,
+  Loader2, Mail, Phone, PhoneCall, Plus, Search, Send, Target, Trash2, Upload, Users, X,
 } from "lucide-react";
 import { customFetch } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -73,7 +73,7 @@ interface Prospect {
   phoneProcess: string | null; stage: string; painPrimary: string | null; painSecondary: string | null;
   objections: string | null; otherStakeholders: string | null; notes: string | null;
   scoreSignals: string[]; score: number; classification: string;
-  lastContactAt: string | null; nextFollowupAt: string | null; demoAt: string | null;
+  lastContactAt: string | null; lastEmailAt: string | null; nextFollowupAt: string | null; demoAt: string | null;
   assignedCloser: string; calls?: Call[];
 }
 interface Summary {
@@ -557,6 +557,9 @@ function ProspectDialog({ id, initial, loading, bookingBase, onClose }: {
   const [callNotes, setCallNotes] = useState("");
   const [edit, setEdit] = useState(id === null); // new prospects open straight into edit mode
   const [bookOpen, setBookOpen] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailNote, setEmailNote] = useState("");
 
   if (!p && initial) setP(initial);
   const set = (patch: Partial<Prospect>) => setP((cur) => (cur ? { ...cur, ...patch } : cur));
@@ -596,6 +599,16 @@ function ProspectDialog({ id, initial, loading, bookingBase, onClose }: {
       toast({ title: `Call logged: ${callOutcome}` });
     },
     onError: (e: Error) => toast({ title: "Couldn't log call", description: e.message, variant: "destructive" }),
+  });
+
+  const emailM = useMutation({
+    mutationFn: () => api.post<{ ok: boolean }>(`/api/admin/prospects/${id}/send-email`, { to: emailTo.trim(), note: emailNote.trim() || undefined }),
+    onSuccess: () => {
+      setChanged(true); setEmailOpen(false); setEmailNote("");
+      setP((cur) => (cur ? { ...cur, lastEmailAt: new Date().toISOString(), lastContactAt: new Date().toISOString() } : cur));
+      toast({ title: "Email sent", description: `Intro email sent to ${emailTo.trim()}` });
+    },
+    onError: (e: Error) => toast({ title: "Couldn't send email", description: e.message, variant: "destructive" }),
   });
 
   const delM = useMutation({ mutationFn: () => api.del(`/api/admin/prospects/${id}`), onSuccess: () => { toast({ title: "Prospect deleted" }); onClose(true); } });
@@ -658,7 +671,14 @@ function ProspectDialog({ id, initial, loading, bookingBase, onClose }: {
                     onClick={() => { window.open(bookUrl, "_blank", "noopener,noreferrer"); setBookOpen(true); }} data-testid="button-book-meeting">
                     <CalendarPlus className="mr-1 h-4 w-4" /> Book meeting
                   </Button>
+                  <Button size="sm" variant="outline" className="border-accent/40 text-accent hover:bg-accent/10"
+                    onClick={() => { setEmailTo(p.dmEmail || p.publicEmail || ""); setEmailOpen(true); }} data-testid="button-send-email">
+                    <Send className="mr-1 h-4 w-4" /> Send email
+                  </Button>
                 </div>
+                {p.lastEmailAt && (
+                  <p className="mt-2 text-[11px] text-accent">✓ Info email sent {fmtDT(p.lastEmailAt)}</p>
+                )}
                 {(callOutcome === "Callback Scheduled" || callOutcome === "Demo Booked") && (
                   <p className="mt-2 text-[11px] text-white/55">Set the {callOutcome === "Demo Booked" ? "demo date" : "follow-up date"} in the Scheduling section (Edit) before logging — it saves with the call.</p>
                 )}
@@ -878,6 +898,42 @@ function ProspectDialog({ id, initial, loading, bookingBase, onClose }: {
               <p className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-white/55">
                 After booking, log the call as <span className="font-semibold text-[#46c97e]">"Demo Booked"</span> and set the date — it then shows on the pipeline &amp; the closer hand-off.
               </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* One-click intro email — sends a ready-made template to the address the caller enters */}
+      {p && (
+        <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+          <DialogContent className="border-white/10 bg-[#07190f] text-white sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <Mail className="h-4 w-4 text-accent" /> Send info email — {p.clubName}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div>
+                <div className="mb-1 text-[11px] text-white/55">Send to</div>
+                <Input value={emailTo} onChange={(e) => setEmailTo(e.target.value)} placeholder="email@club.com"
+                  type="email" className={inputCls} data-testid="input-email-to" />
+                <p className="mt-1 text-[11px] text-white/40">Prefilled from the record — change it to whatever address they give you on the call.</p>
+              </div>
+              <div>
+                <div className="mb-1 text-[11px] text-white/55">Add a personal line (optional)</div>
+                <Textarea value={emailNote} onChange={(e) => setEmailNote(e.target.value)} rows={2}
+                  placeholder="e.g. Great talking with you about your missed calls during peak season…" className={inputCls} data-testid="input-email-note" />
+              </div>
+              <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs text-white/55">
+                <div className="mb-1 font-semibold text-white/70">What gets sent:</div>
+                A branded intro to Fairway360 with a link to <span className="text-accent">fairway360.io</span>, the live AI demo line
+                <span className="text-accent"> +1 (412) 285-1554</span>, and a link to book a demo with Brady. Replies go to your sales inbox.
+              </div>
+              <Button className="w-full" disabled={!/^\S+@\S+\.\S+$/.test(emailTo.trim()) || emailM.isPending}
+                onClick={() => emailM.mutate()} data-testid="button-send-email-confirm">
+                {emailM.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                Send email
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
