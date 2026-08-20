@@ -112,6 +112,47 @@ export function PortalLogin() {
     }
   }
 
+  // One-click demo: /portal?demo=supervisor|employees|members auto-signs into the
+  // sample-data club and drops the visitor straight in — used by outreach emails
+  // so a prospect sees the live product with a single click, no login.
+  const [autoDemoTried, setAutoDemoTried] = useState(false);
+  useEffect(() => {
+    if (autoDemoTried) return;
+    const which = new URLSearchParams(window.location.search).get("demo");
+    const map: Record<string, { email: string; home: string }> = {
+      supervisor: { email: "carlos@augustapines.com", home: "/portal/dashboard" },
+      owner: { email: "carlos@augustapines.com", home: "/portal/dashboard" },
+      employees: { email: "maria@augustapines.com", home: "/portal/employees" },
+      members: { email: "james@augustapines.com", home: "/portal/members" },
+    };
+    const creds = which ? map[which] : undefined;
+    if (!creds) return;
+    setAutoDemoTried(true);
+    setPending("demo");
+    (async () => {
+      try {
+        await login(creds.email, "Password123!");
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        setLocation(creds.home);
+      } catch {
+        setPending(null);
+        setShowDemo(true);
+        toast({ title: "Demo is loading…", description: "Tap a portal below to explore the sample club.", });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDemoTried]);
+
+  if (pending === "demo") {
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center gap-5 bg-[hsl(146_46%_17%)] px-4 text-white">
+        <PortalLogo size="lg" />
+        <Loader2 className="h-7 w-7 animate-spin text-white/80" />
+        <p className="text-sm text-white/70">Loading your live Fairway360 demo…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-dvh flex flex-col items-center justify-center bg-[hsl(146_46%_17%)] px-4 py-16 text-white">
       <Seo title="Log In | Fairway360" description="Log in to your Fairway360 golf club management dashboard." path="/portal" noindex />

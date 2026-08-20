@@ -518,7 +518,7 @@ const DEFAULT_BOOKING_URL = "https://cal.com/bradywalker9/15min";
 const DEFAULT_REPLY_TO = "brady.walker@fairway360.io";
 const DEFAULT_SENDER = "Brady Walker <brady.walker@fairway360.io>";
 const DEFAULT_WEBSITE = "https://fairway360.io";
-const DEFAULT_DEMO_URL = "https://fairway360.io/demo";
+const DEFAULT_DEMO_URL = "https://fairway360.io/portal?demo=supervisor";
 
 async function loadSettings() {
   const rows = await db.select().from(platformSettings);
