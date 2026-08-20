@@ -517,13 +517,14 @@ router.post(
 const DEFAULT_BOOKING_URL = "https://cal.com/bradywalker9/15min";
 const DEFAULT_REPLY_TO = "info@fairway360.io";
 const DEFAULT_WEBSITE = "https://fairway360.io";
-const AI_DEMO_LINE = "+1 (412) 285-1554";
+const DEFAULT_DEMO_URL = "https://fairway360.io/demo";
 
 async function loadSettings() {
   const rows = await db.select().from(platformSettings);
   const map = Object.fromEntries(rows.map((r) => [r.key, r.value]));
   return {
     bookingUrl: map["booking_url"] || DEFAULT_BOOKING_URL,
+    demoUrl: map["demo_url"] || DEFAULT_DEMO_URL,
     replyTo: map["sales_reply_to"] || DEFAULT_REPLY_TO,
   };
 }
@@ -544,6 +545,7 @@ router.get(
 
 const SettingsBody = z.object({
   bookingUrl: z.string().trim().url().max(500).optional(),
+  demoUrl: z.string().trim().url().max(500).optional(),
   replyTo: z.string().trim().email().max(160).optional(),
 });
 router.patch(
@@ -552,6 +554,7 @@ router.patch(
   asyncHandler(async (req, res) => {
     const body = SettingsBody.parse(req.body);
     if (body.bookingUrl) await setSetting("booking_url", body.bookingUrl);
+    if (body.demoUrl) await setSetting("demo_url", body.demoUrl);
     if (body.replyTo) await setSetting("sales_reply_to", body.replyTo);
     res.json({ ok: true, ...(await loadSettings()) });
   }),
@@ -565,9 +568,9 @@ const SendProspectEmailBody = z.object({
 
 function prospectEmailHtml(opts: {
   firstName: string; clubName: string; note: string | null;
-  website: string; bookingUrl: string;
+  website: string; demoUrl: string; bookingUrl: string;
 }): string {
-  const { firstName, clubName, note, website, bookingUrl } = opts;
+  const { firstName, clubName, note, website, demoUrl, bookingUrl } = opts;
   const noteBlock = note
     ? `<p style="margin:0 0 16px;white-space:pre-wrap">${note.replace(/</g, "&lt;")}</p>`
     : "";
@@ -586,12 +589,11 @@ function prospectEmailHtml(opts: {
         <li style="margin-bottom:6px"><b>Membership &amp; event capture</b> — every inquiry logged and followed up automatically</li>
         <li style="margin-bottom:6px"><b>On-course food &amp; beverage ordering</b> — straight from the phone to the cart</li>
       </ul>
-      <p style="margin:0 0 10px"><b>See it for yourself:</b></p>
+      <p style="margin:0 0 10px"><b>See a live demo:</b></p>
       <p style="margin:0 0 22px">
-        <a href="${website}" style="background:#1a6b46;color:#fff;text-decoration:none;padding:11px 20px;border-radius:10px;font-weight:600;display:inline-block">See how it works →</a>
+        <a href="${demoUrl}" style="background:#1a6b46;color:#fff;text-decoration:none;padding:11px 22px;border-radius:10px;font-weight:600;display:inline-block">Watch the Fairway360 demo →</a>
       </p>
-      <p style="margin:0 0 16px;color:#3a4a41">Or call our AI line at <a href="tel:+14122851554" style="color:#1a6b46;font-weight:600">${AI_DEMO_LINE}</a> and talk to the assistant yourself — it's the exact technology your club would get.</p>
-      <p style="margin:0 0 16px">Want a quick 15-minute walkthrough? <a href="${bookingUrl}" style="color:#1a6b46;font-weight:600">Grab a time here</a>.</p>
+      <p style="margin:0 0 16px">Prefer a quick 15-minute walkthrough with our team? <a href="${bookingUrl}" style="color:#1a6b46;font-weight:600">Grab a time here</a>.</p>
       <p style="margin:18px 0 0">Just reply to this email with any questions — happy to help.</p>
       <p style="margin:16px 0 0;color:#6a7a71;font-size:13px">— The Fairway360 Team · <a href="${website}" style="color:#6a7a71">fairway360.io</a></p>
       <p style="margin:14px 0 0;color:#9aa8a0;font-size:11px">You received this because you asked us to send information during our call. Reply "unsubscribe" and we won't email again.</p>
@@ -607,11 +609,11 @@ router.post(
     const [p] = await db.select().from(prospects).where(eq(prospects.id, req.params.id));
     if (!p) throw notFound("Prospect not found.");
 
-    const { bookingUrl, replyTo } = await loadSettings();
+    const { bookingUrl, demoUrl, replyTo } = await loadSettings();
     const firstName = (p.dmName ?? "").split(" ")[0] || "there";
     const html = prospectEmailHtml({
       firstName, clubName: p.clubName, note: note ?? null,
-      website: DEFAULT_WEBSITE, bookingUrl,
+      website: DEFAULT_WEBSITE, demoUrl, bookingUrl,
     });
 
     const ok = await sendEmail({

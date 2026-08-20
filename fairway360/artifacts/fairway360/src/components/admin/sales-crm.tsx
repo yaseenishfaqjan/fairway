@@ -158,8 +158,9 @@ export function SalesCrm() {
   }, [segFilter, campaign, q, dueOnly]);
 
   const summaryQ = useQuery({ queryKey: ["crm", "summary"], queryFn: () => api.get<Summary>("/api/admin/outreach/summary"), refetchInterval: 60_000 });
-  const settingsQ = useQuery({ queryKey: ["crm", "settings"], queryFn: () => api.get<{ bookingUrl: string }>("/api/admin/settings") });
+  const settingsQ = useQuery({ queryKey: ["crm", "settings"], queryFn: () => api.get<{ bookingUrl: string; demoUrl: string }>("/api/admin/settings") });
   const bookingUrl = settingsQ.data?.bookingUrl || CAL_BOOKING_URL;
+  const demoUrl = settingsQ.data?.demoUrl || "https://fairway360.io/demo";
   const listQ = useQuery({ queryKey: ["crm", "list", listUrl], queryFn: () => api.get<Prospect[]>(listUrl) });
   const detailQ = useQuery({
     queryKey: ["crm", "detail", openId],
@@ -283,7 +284,7 @@ export function SalesCrm() {
           </div>
         )}
 
-        {view === "dashboard" && <Dashboard s={s} bookingUrl={bookingUrl} onOpen={setOpenId} onStage={() => setView("pipeline")} onSaved={() => void qc.invalidateQueries({ queryKey: ["crm", "settings"] })} />}
+        {view === "dashboard" && <Dashboard s={s} bookingUrl={bookingUrl} demoUrl={demoUrl} onOpen={setOpenId} onStage={() => setView("pipeline")} onSaved={() => void qc.invalidateQueries({ queryKey: ["crm", "settings"] })} />}
         {view === "pipeline" && (
           <PipelineBoard prospects={prospects} loading={listQ.isLoading} funnelCount={funnelCount}
             filtered={campaign !== "all" || segFilter !== "all" || !!q.trim()} today={s?.today} onOpen={setOpenId} />
@@ -334,27 +335,27 @@ function Kpi({ label, value, tone }: { label: string; value: number | string; to
   );
 }
 
-function BookingLinkCard({ current, onSaved }: { current: string; onSaved: () => void }) {
+function LinkSetting({ label, help, field, current, testId, onSaved }: {
+  label: string; help: string; field: "bookingUrl" | "demoUrl"; current: string; testId: string; onSaved: () => void;
+}) {
   const { toast } = useToast();
   const [url, setUrl] = useState(current);
   const save = useMutation({
-    mutationFn: () => api.patch<{ bookingUrl: string }>("/api/admin/settings", { bookingUrl: url.trim() }),
-    onSuccess: () => { onSaved(); toast({ title: "Booking link saved", description: "Every 'Book meeting' button now uses this link." }); },
+    mutationFn: () => api.patch<Record<string, string>>("/api/admin/settings", { [field]: url.trim() }),
+    onSuccess: () => { onSaved(); toast({ title: `${label} saved` }); },
     onError: (e: Error) => toast({ title: "Couldn't save", description: e.message, variant: "destructive" }),
   });
   const dirty = url.trim() !== current;
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-      <div className="mb-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-accent">
-        <CalendarPlus className="h-3.5 w-3.5" /> Booking link (Brady's calendar)
-      </div>
-      <p className="mb-2 text-xs text-white/50">The "Book meeting" button on every prospect opens this link, prefilled. Paste the exact public link from Brady's Cal.com event (open it in a browser, copy the address). Test it opens before saving.</p>
+    <div>
+      <div className="mb-1 text-xs font-semibold text-white/80">{label}</div>
+      <p className="mb-1.5 text-[11px] text-white/45">{help}</p>
       <div className="flex flex-wrap gap-2">
-        <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://cal.com/username/event" className={cn(inputCls, "min-w-[240px] flex-1")} data-testid="input-booking-url" />
+        <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" className={cn(inputCls, "min-w-[240px] flex-1")} data-testid={testId} />
         <Button size="sm" variant="outline" className="border-white/15" asChild>
           <a href={url} target="_blank" rel="noreferrer">Test</a>
         </Button>
-        <Button size="sm" disabled={!dirty || save.isPending || !/^https?:\/\//.test(url.trim())} onClick={() => save.mutate()} data-testid="button-save-booking-url">
+        <Button size="sm" disabled={!dirty || save.isPending || !/^https?:\/\//.test(url.trim())} onClick={() => save.mutate()} data-testid={`${testId}-save`}>
           {save.isPending && <Loader2 className="mr-1 h-4 w-4 animate-spin" />} Save
         </Button>
       </div>
@@ -362,11 +363,25 @@ function BookingLinkCard({ current, onSaved }: { current: string; onSaved: () =>
   );
 }
 
-function Dashboard({ s, bookingUrl, onOpen, onStage, onSaved }: { s: Summary | undefined; bookingUrl: string; onOpen: (id: string) => void; onStage: () => void; onSaved: () => void }) {
+function SettingsCard({ bookingUrl, demoUrl, onSaved }: { bookingUrl: string; demoUrl: string; onSaved: () => void }) {
+  return (
+    <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.04] p-3">
+      <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-accent">
+        <CalendarPlus className="h-3.5 w-3.5" /> Outreach links
+      </div>
+      <LinkSetting label="Booking link (Brady's calendar)" field="bookingUrl" current={bookingUrl} testId="input-booking-url" onSaved={onSaved}
+        help="The 'Book meeting' button opens this, prefilled. Paste the exact public link from Brady's Cal.com event." />
+      <LinkSetting label="Demo link (sent in the info email)" field="demoUrl" current={demoUrl} testId="input-demo-url" onSaved={onSaved}
+        help="The 'Watch the Fairway360 demo' button in the info email points here. Paste a demo video or page URL." />
+    </div>
+  );
+}
+
+function Dashboard({ s, bookingUrl, demoUrl, onOpen, onStage, onSaved }: { s: Summary | undefined; bookingUrl: string; demoUrl: string; onOpen: (id: string) => void; onStage: () => void; onSaved: () => void }) {
   if (!s) return <Loader2 className="h-5 w-5 animate-spin text-accent" />;
   return (
     <div className="space-y-5">
-      <BookingLinkCard current={bookingUrl} onSaved={onSaved} />
+      <SettingsCard bookingUrl={bookingUrl} demoUrl={demoUrl} onSaved={onSaved} />
       <div>
         <div className="mb-1 text-[10px] font-semibold uppercase tracking-[1.5px] text-accent">Today's calling scorecard</div>
         <div className="grid grid-cols-3 gap-2 md:grid-cols-4 lg:grid-cols-8">
@@ -926,8 +941,7 @@ function ProspectDialog({ id, initial, loading, bookingBase, onClose }: {
               </div>
               <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3 text-xs text-white/55">
                 <div className="mb-1 font-semibold text-white/70">What gets sent:</div>
-                A branded intro to Fairway360 with a link to <span className="text-accent">fairway360.io</span>, the live AI demo line
-                <span className="text-accent"> +1 (412) 285-1554</span>, and a link to book a demo with Brady. Replies go to your sales inbox.
+                A branded intro to Fairway360 with a <span className="text-accent">"Watch the demo"</span> link and a link to book a walkthrough with Brady. Replies go to your sales inbox. (Set the demo link on the Dashboard.)
               </div>
               <Button className="w-full" disabled={!/^\S+@\S+\.\S+$/.test(emailTo.trim()) || emailM.isPending}
                 onClick={() => emailM.mutate()} data-testid="button-send-email-confirm">
