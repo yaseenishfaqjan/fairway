@@ -11,6 +11,7 @@ export interface SendEmailInput {
   subject: string;
   html: string;
   replyTo?: string;
+  from?: string; // override the default sender ("Name <addr@fairway360.io>"); domain must be verified in Resend
 }
 
 export function emailEnabled(): boolean {
@@ -19,7 +20,7 @@ export function emailEnabled(): boolean {
 
 export async function sendEmail(input: SendEmailInput): Promise<boolean> {
   const apiKey = process.env["RESEND_API_KEY"];
-  const from = process.env["EMAIL_FROM"];
+  const from = input.from || process.env["EMAIL_FROM"];
   if (!apiKey || !from) {
     logger.debug("email: skipped (RESEND_API_KEY/EMAIL_FROM not configured)");
     return false;

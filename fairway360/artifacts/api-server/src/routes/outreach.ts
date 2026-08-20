@@ -515,7 +515,8 @@ router.post(
 
 // ── Platform settings (super-admin editable; booking link, sales reply-to) ───
 const DEFAULT_BOOKING_URL = "https://cal.com/bradywalker9/15min";
-const DEFAULT_REPLY_TO = "info@fairway360.io";
+const DEFAULT_REPLY_TO = "brady.walker@fairway360.io";
+const DEFAULT_SENDER = "Brady Walker <brady.walker@fairway360.io>";
 const DEFAULT_WEBSITE = "https://fairway360.io";
 const DEFAULT_DEMO_URL = "https://fairway360.io/demo";
 
@@ -526,6 +527,7 @@ async function loadSettings() {
     bookingUrl: map["booking_url"] || DEFAULT_BOOKING_URL,
     demoUrl: map["demo_url"] || DEFAULT_DEMO_URL,
     replyTo: map["sales_reply_to"] || DEFAULT_REPLY_TO,
+    sender: map["sales_sender"] || DEFAULT_SENDER,
   };
 }
 async function setSetting(key: string, value: string) {
@@ -547,6 +549,9 @@ const SettingsBody = z.object({
   bookingUrl: z.string().trim().url().max(500).optional(),
   demoUrl: z.string().trim().url().max(500).optional(),
   replyTo: z.string().trim().email().max(160).optional(),
+  // "Name <addr@fairway360.io>" — the domain must be verified in Resend, so
+  // require a fairway360.io address to avoid sends silently failing.
+  sender: z.string().trim().max(200).regex(/@fairway360\.io>?\s*$/i, "Sender must be a fairway360.io address").optional(),
 });
 router.patch(
   "/admin/settings",
@@ -556,6 +561,7 @@ router.patch(
     if (body.bookingUrl) await setSetting("booking_url", body.bookingUrl);
     if (body.demoUrl) await setSetting("demo_url", body.demoUrl);
     if (body.replyTo) await setSetting("sales_reply_to", body.replyTo);
+    if (body.sender) await setSetting("sales_sender", body.sender);
     res.json({ ok: true, ...(await loadSettings()) });
   }),
 );
@@ -568,9 +574,9 @@ const SendProspectEmailBody = z.object({
 
 function prospectEmailHtml(opts: {
   firstName: string; clubName: string; note: string | null;
-  website: string; demoUrl: string; bookingUrl: string;
+  website: string; demoUrl: string; bookingUrl: string; senderName: string;
 }): string {
-  const { firstName, clubName, note, website, demoUrl, bookingUrl } = opts;
+  const { firstName, clubName, note, website, demoUrl, bookingUrl, senderName } = opts;
   const noteBlock = note
     ? `<p style="margin:0 0 16px;white-space:pre-wrap">${note.replace(/</g, "&lt;")}</p>`
     : "";
@@ -594,8 +600,8 @@ function prospectEmailHtml(opts: {
         <a href="${demoUrl}" style="background:#1a6b46;color:#fff;text-decoration:none;padding:11px 22px;border-radius:10px;font-weight:600;display:inline-block">Watch the Fairway360 demo →</a>
       </p>
       <p style="margin:0 0 16px">Prefer a quick 15-minute walkthrough with our team? <a href="${bookingUrl}" style="color:#1a6b46;font-weight:600">Grab a time here</a>.</p>
-      <p style="margin:18px 0 0">Just reply to this email with any questions — happy to help.</p>
-      <p style="margin:16px 0 0;color:#6a7a71;font-size:13px">— The Fairway360 Team · <a href="${website}" style="color:#6a7a71">fairway360.io</a></p>
+      <p style="margin:18px 0 0">Have any questions? Just reply to this email — it comes straight to me.</p>
+      <p style="margin:16px 0 0;color:#3a4a41;font-size:14px"><b>${senderName}</b><br><span style="color:#6a7a71;font-size:13px">Fairway360 · <a href="${website}" style="color:#6a7a71">fairway360.io</a></span></p>
       <p style="margin:14px 0 0;color:#9aa8a0;font-size:11px">You received this because you asked us to send information during our call. Reply "unsubscribe" and we won't email again.</p>
     </div>
   </div>`;
@@ -609,18 +615,21 @@ router.post(
     const [p] = await db.select().from(prospects).where(eq(prospects.id, req.params.id));
     if (!p) throw notFound("Prospect not found.");
 
-    const { bookingUrl, demoUrl, replyTo } = await loadSettings();
+    const { bookingUrl, demoUrl, replyTo, sender } = await loadSettings();
     const firstName = (p.dmName ?? "").split(" ")[0] || "there";
+    // Display name from the sender ("Brady Walker <addr>" → "Brady Walker").
+    const senderName = sender.split("<")[0].trim() || "The Fairway360 Team";
     const html = prospectEmailHtml({
       firstName, clubName: p.clubName, note: note ?? null,
-      website: DEFAULT_WEBSITE, demoUrl, bookingUrl,
+      website: DEFAULT_WEBSITE, demoUrl, bookingUrl, senderName,
     });
 
     const ok = await sendEmail({
       to,
       subject: `How Fairway360 works — for ${p.clubName}`,
       html,
-      replyTo,
+      from: sender,       // sent FROM Brady's fairway360.io address
+      replyTo,            // replies land in Brady's inbox
     });
     if (!ok) throw badRequest("Email couldn't be sent — check the email service configuration.");
 
